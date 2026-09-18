@@ -423,3 +423,45 @@ tr.gold td.medal{color:var(--pb)}
 /* the wordmark is the way home */
 .brand{padding:0;cursor:pointer;text-align:left}
 .brand:hover b{opacity:.7}
+
+/* ---------- top times slider ---------- */
+.toptimes{margin-bottom:24px}
+.tt-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.tt-head h2{margin:0;font-size:15px;font-weight:800;letter-spacing:-.01em}
+.tt-dots{display:flex;gap:5px;margin-left:auto}
+.tt-dot{width:6px;height:6px;border-radius:50%;background:var(--line);transition:background .2s}
+.tt-dot.on{background:var(--ink-2)}
+.tt-track{
+  display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;
+}
+.tt-track::-webkit-scrollbar{display:none}
+.tt-card{
+  flex:0 0 min(100%, 330px);scroll-snap-align:start;
+  display:flex;align-items:center;gap:14px;
+  border:1px solid var(--line);border-radius:16px;
+  padding:14px 16px;background:var(--bg);box-shadow:var(--shadow);
+}
+.tt-art{flex:none;width:76px;height:76px;display:flex;align-items:center;justify-content:center}
+.tt-art svg{display:block;height:76px;width:auto;max-width:100%}
+.tt-body{min-width:0;flex:1}
+.tt-name{font-size:15px;font-weight:800;letter-spacing:-.01em;margin-bottom:6px}
+.tt-list{display:flex;flex-direction:column;gap:3px}
+.tt-row{display:flex;align-items:baseline;gap:8px;font-family:var(--font-num);font-size:13px}
+.tt-row .rk{color:var(--muted);font-size:10.5px;width:12px;flex:none}
+.tt-row .tm{font-weight:600;letter-spacing:-.01em}
+.tt-row.gold .tm{color:var(--pb);font-weight:700}
+.tt-none{font-size:12px;color:var(--muted)}
+
+/* A <button> centres its text and a <span> is inline; the card needs neither. */
+.tt-card{text-align:left}
+.tt-name{display:block}
+.tt-body{display:block}
+
+/* The wordmark and the solve count fight for room once there are solves to
+   count. The count is decoration, so it yields first. */
+@media (max-width: 480px){
+  .tally{display:none}
+}
+.brand{overflow:hidden}
+.brand b{overflow:hidden;text-overflow:ellipsis}
