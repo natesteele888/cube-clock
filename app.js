@@ -247,7 +247,7 @@ import * as LB from "./leaderboard.js";
 
   /* ============ storage ============ */
   var KEY="cubeclock.v1";
-  var store={ solves:{}, opts:{ inspect:false, scramble:false } };
+  var store={ solves:{}, opts:{ mode:"c3", sound:true, scramble:false } };
   function load(){
     try{
       var raw=localStorage.getItem(KEY);
@@ -255,8 +255,10 @@ import * as LB from "./leaderboard.js";
       var d=JSON.parse(raw);
       if(d && d.solves && typeof d.solves==="object") store.solves=d.solves;
       if(d && d.opts && typeof d.opts==="object"){
-        store.opts.inspect = !!d.opts.inspect;
         store.opts.scramble = !!d.opts.scramble;
+        if(typeof d.opts.sound === "boolean") store.opts.sound = d.opts.sound;
+        if(MODES[d.opts.mode]) store.opts.mode = d.opts.mode;
+        else if(d.opts.inspect) store.opts.mode = "wca";   // carried over from the old toggle
       }
     }catch(err){ /* private window or blocked storage: run from memory */ }
   }
@@ -357,6 +359,186 @@ import * as LB from "./leaderboard.js";
     if(which === "lead" && leadUnsub){ leadUnsub(); leadUnsub = null; }
   }
 
+
+  /* ============ sound ============ */
+  /* Everything is synthesised with the Web Audio API: no files to download, no
+     licensing, and it starts instantly. An AudioContext may only begin after a
+     real user gesture, which the tap that starts a countdown provides. */
+  var actx = null;
+  function audio(){
+    if(!store.opts.sound) return null;
+    try{
+      if(!actx){
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if(!AC) return null;
+        actx = new AC();
+      }
+      if(actx.state === "suspended") actx.resume();
+      return actx;
+    }catch(err){ return null; }
+  }
+  function tone(freq, dur, vol, type){
+    var a = audio();
+    if(!a) return;
+    var t = a.currentTime;
+    var o = a.createOscillator(), g = a.createGain();
+    o.type = type || "sine";
+    o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(a.destination);
+    o.start(t); o.stop(t + dur + 0.03);
+  }
+  function beepTick(last){ tone(last ? 880 : 660, 0.10, 0.22, "triangle"); }
+  /* A bell rather than a beep: a fundamental with bright partials over it and a
+     long decay, so it rings instead of blipping. */
+  function beepGo(){
+    var a = audio();
+    if(!a) return;
+    var t = a.currentTime;
+    var partials = [[1046.5, 0.30, 1.7], [1568.0, 0.17, 1.4], [2093.0, 0.10, 1.1], [2637.0, 0.06, 0.85]];
+    partials.forEach(function(p){
+      var o = a.createOscillator(), g = a.createGain();
+      o.type = "sine";
+      o.frequency.setValueAtTime(p[0], t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(p[1], t + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + p[2]);
+      o.connect(g); g.connect(a.destination);
+      o.start(t); o.stop(t + p[2] + 0.05);
+    });
+  }
+
+  /* Fallback only: a crowd is broadband noise that swells and wobbles. */
+  function synthCheer(){
+    var a = audio();
+    if(!a) return;
+    var t = a.currentTime, dur = 2.8;
+    var frames = Math.floor(a.sampleRate * dur);
+    var buf = a.createBuffer(1, frames, a.sampleRate);
+    var d = buf.getChannelData(0), i;
+    for(i = 0; i < frames; i++) d[i] = Math.random() * 2 - 1;
+
+    function layer(freq, q, peak){
+      var src = a.createBufferSource(); src.buffer = buf;
+      var bp = a.createBiquadFilter(); bp.type = "bandpass";
+      bp.frequency.value = freq; bp.Q.value = q;
+      var g = a.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(peak, t + 0.28);
+      g.gain.setValueAtTime(peak, t + 1.5);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      // slow wobble so it breathes like a real crowd rather than hissing
+      var lfo = a.createOscillator(), lg = a.createGain();
+      lfo.frequency.value = 5.5; lg.gain.value = peak * 0.3;
+      lfo.connect(lg); lg.connect(g.gain);
+      lfo.start(t); lfo.stop(t + dur);
+      src.connect(bp); bp.connect(g); g.connect(a.destination);
+      src.start(t); src.stop(t + dur);
+    }
+    layer(1150, 0.8, 0.30);   // voices
+    layer(420, 1.1, 0.16);    // rumble
+
+    [0.30, 0.72, 1.25, 1.75].forEach(function(at, k){
+      var o = a.createOscillator(), g = a.createGain();
+      o.type = "sine";
+      o.frequency.setValueAtTime(1500 + k * 190, t + at);
+      o.frequency.exponentialRampToValueAtTime(2500 + k * 170, t + at + 0.16);
+      g.gain.setValueAtTime(0.0001, t + at);
+      g.gain.exponentialRampToValueAtTime(0.075, t + at + 0.04);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + at + 0.32);
+      o.connect(g); g.connect(a.destination);
+      o.start(t + at); o.stop(t + at + 0.36);
+    });
+  }
+
+  /* The real recording when it loads, the synthesised crowd when it does not. */
+  var cheerEl = null;
+  function cheer(){
+    if(!store.opts.sound) return;
+    try{
+      if(!cheerEl){
+        cheerEl = new Audio("sounds/crowd-cheer.mp3");
+        cheerEl.preload = "auto";
+        cheerEl.volume = 0.75;
+      }
+      cheerEl.currentTime = 0;
+      var play = cheerEl.play();
+      if(play && play.catch) play.catch(function(){ synthCheer(); });
+    }catch(err){
+      synthCheer();
+    }
+  }
+
+  /* ============ confetti ============ */
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function confetti(){
+    if(reduceMotion) return;
+    var cv = document.createElement("canvas");
+    cv.className = "confetti";
+    cv.setAttribute("aria-hidden", "true");
+    document.body.appendChild(cv);
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = window.innerWidth, H = window.innerHeight;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    var g = cv.getContext("2d");
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var colors = [STK.r, STK.b, STK.y, STK.g, STK.o, STK.p, "#FCFCFC"];
+    var parts = [], i;
+    for(i = 0; i < 150; i++){
+      parts.push({
+        x: Math.random() * W,
+        y: -20 - Math.random() * H * 0.6,
+        w: 6 + Math.random() * 7,
+        h: 9 + Math.random() * 9,
+        vx: -1.3 + Math.random() * 2.6,
+        vy: 2.0 + Math.random() * 3.4,
+        rot: Math.random() * Math.PI * 2,
+        vr: -0.16 + Math.random() * 0.32,
+        c: colors[Math.floor(Math.random() * colors.length)]
+      });
+    }
+    var t0 = performance.now();
+    // frames can stall; make sure the canvas cannot outlive the animation
+    setTimeout(function(){ if(cv.parentNode) cv.remove(); }, 4200);
+    (function frame(now){
+      var el = now - t0;
+      g.clearRect(0, 0, W, H);
+      g.globalAlpha = el > 2700 ? Math.max(0, 1 - (el - 2700) / 900) : 1;
+      for(var k = 0; k < parts.length; k++){
+        var p = parts[k];
+        p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.vy += 0.045;
+        g.save();
+        g.translate(p.x, p.y);
+        g.rotate(p.rot);
+        g.fillStyle = p.c;
+        g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        g.restore();
+      }
+      if(el < 3600) requestAnimationFrame(frame);
+      else cv.remove();
+    })(t0);
+  }
+
+  var burstTimer = 0;
+  function celebrate(ms){
+    cheer();
+    confetti();
+    buzz([0, 60, 50, 120]);
+    var el = $("pb-burst");
+    $("pb-burst-time").textContent = fmt(ms);
+    setShown(el, true);
+    // a timeout, not requestAnimationFrame: if frames are throttled the class
+    // would never be added and the banner would stay invisible
+    setTimeout(function(){ el.classList.add("show"); }, 20);
+    clearTimeout(burstTimer);
+    burstTimer = setTimeout(function(){
+      el.classList.remove("show");
+      setTimeout(function(){ setShown(el, false); }, 260);
+    }, 2400);
+  }
+
   /* ============ view plumbing ============ */
   function $(id){ return document.getElementById(id); }
   function setShown(el,on){ el.hidden=!on; el.classList.toggle("v-off", !on); }
@@ -398,9 +580,9 @@ import * as LB from "./leaderboard.js";
   var userGestured = false;
   window.addEventListener("pointerdown", function(e){ if(e.isTrusted) userGestured = true; }, true);
   window.addEventListener("keydown", function(e){ if(e.isTrusted) userGestured = true; }, true);
-  function buzz(ms){
+  function buzz(pattern){
     if(!userGestured || !navigator.vibrate) return;
-    try{ navigator.vibrate(ms); }catch(err){ /* unsupported */ }
+    try{ navigator.vibrate(pattern); }catch(err){ /* unsupported */ }
   }
 
   /* ============ home ============ */
@@ -426,8 +608,24 @@ import * as LB from "./leaderboard.js";
 
   /* ============ timer ============ */
   var HOLD_MS=320, INSPECT_MS=15000;
-  var T={ id:"333", scramble:"", phase:"idle", start:0, inspStart:0, raf:0, hold:0,
-          swallow:false, lastIdx:-1, pending:0, moreOpen:false };
+  /* The start modes are mutually exclusive, so one cycling control expresses them
+     better than several competing on/off switches. */
+  var MODES = {
+    c3:   { next:"c5",   secs:3,  label:"Countdown 3s",  short:"3s"  },
+    c5:   { next:"c10",  secs:5,  label:"Countdown 5s",  short:"5s"  },
+    c10:  { next:"hold", secs:10, label:"Countdown 10s", short:"10s" },
+    hold: { next:"wca",  secs:0,  label:"Hold to start", short:"Hold"},
+    wca:  { next:"c3",   secs:0,  label:"Inspection 15s",short:"WCA" }
+  };
+  function mode(){ return MODES[store.opts.mode] || MODES.c3; }
+  var T={ id:"333", scramble:"", phase:"idle", start:0, inspStart:0, raf:0, hold:0, iv:0,
+          swallow:false, lastIdx:-1, pending:0, moreOpen:false,
+          countEnd:0, lastBeep:-1 };
+  function stopLoops(){
+    cancelAnimationFrame(T.raf);
+    clearInterval(T.iv);
+    T.iv = 0;
+  }
   var timerEl=$("t-time"), hintEl=$("t-hint"), padEl=$("t-pad"), rootEl=$("view-timer");
   var isTouch = window.matchMedia("(pointer: coarse)").matches ||
                 navigator.maxTouchPoints > 0 || ("ontouchstart" in window);
@@ -471,6 +669,8 @@ import * as LB from "./leaderboard.js";
   });
   function resetFace(){
     setSheet(false);
+    stopLoops();
+    setShown($("stop-catch"), false);
     T.phase="idle"; T.pending=0; T.inspStart=0;
     rootEl.classList.remove("armed","running");
     timerEl.className="t-time num";
@@ -483,12 +683,16 @@ import * as LB from "./leaderboard.js";
     rootEl.classList.toggle("armed", T.phase==="armed"||T.phase==="iarmed");
     rootEl.classList.toggle("running", T.phase==="running");
     var h;
+    var m = store.opts.mode;
     if(T.phase==="running") h="";
+    else if(T.phase==="count") h="Get ready&hellip;";
     else if(T.phase==="armed"||T.phase==="iarmed") h="Let go!";
     else if(T.phase==="hold"||T.phase==="ihold") h="Keep holding&hellip;";
     else if(T.phase==="inspect") h = isTouch ? "Inspecting &mdash; hold when you are ready" : "Inspecting &mdash; hold <kbd>space</kbd> when ready";
-    else if(store.opts.inspect) h = isTouch ? "Tap for 15 seconds of inspection" : "Press <kbd>space</kbd> for 15 seconds of inspection";
-    else h = isTouch ? "Press and hold, then let go" : "Hold <kbd>space</kbd> to get ready";
+    else if(m==="wca") h = isTouch ? "Tap for 15 seconds of inspection" : "Press <kbd>space</kbd> for 15 seconds of inspection";
+    else if(m==="hold") h = isTouch ? "Press and hold, then let go" : "Hold <kbd>space</kbd> to get ready";
+    else h = (isTouch ? "Tap when you are ready" : "Press <kbd>space</kbd> when ready") +
+             " \u2014 " + mode().secs + " second countdown";
     hintEl.innerHTML=h;
   }
 
@@ -508,8 +712,8 @@ import * as LB from "./leaderboard.js";
     T.phase="inspect";
     T.inspStart=performance.now();
     setShown($("t-actions"), false);
-    cancelAnimationFrame(T.raf);
-    (function tick(){
+    stopLoops();
+    function istep(){
       if(T.phase!=="inspect" && T.phase!=="ihold" && T.phase!=="iarmed") return;
       var el=performance.now()-T.inspStart, cls="insp", txt;
       if(el < INSPECT_MS){
@@ -519,15 +723,60 @@ import * as LB from "./leaderboard.js";
       else { txt="DNF"; cls="insp-bad"; }
       timerEl.className="t-time num "+cls;
       timerEl.textContent=txt;
-      T.raf=requestAnimationFrame(tick);
-    })();
+    }
+    T.iv = setInterval(istep, 100);
+    istep();
+    paint();
+  }
+  function startCountdown(){
+    var secs = mode().secs;
+    T.phase="count";
+    T.countEnd = performance.now() + secs*1000;
+    T.lastBeep = -1;
+    setShown($("t-actions"), false);
+    stopLoops();
+    /* Deliberately an interval rather than requestAnimationFrame: rAF only runs
+       when the browser is painting frames, so a throttled or backgrounded tab
+       would freeze the countdown and the solve would never start. An interval
+       keeps firing, so the worst case is a late tick, not a dead timer. */
+    function step(){
+      if(T.phase !== "count") return;
+      var left = T.countEnd - performance.now();
+      if(left <= 0){
+        stopLoops();
+        timerEl.className = "t-time num go";
+        timerEl.textContent = "GO";
+        beepGo();
+        buzz(40);
+        startRun();
+        return;
+      }
+      var n = Math.ceil(left / 1000);
+      if(n !== T.lastBeep){
+        T.lastBeep = n;
+        beepTick(n <= 3);
+        buzz(14);
+      }
+      timerEl.className = "t-time num " + (n <= 3 ? "count-soon" : "count");
+      timerEl.textContent = String(n);
+    }
+    T.iv = setInterval(step, 50);
+    step();
     paint();
   }
   function onPress(){
     if(sheetOpen()) return;
     if(T.phase==="running"){ stopRun(); T.swallow=true; return; }
+    if(T.phase==="count"){          // a second tap calls it off
+      stopLoops();
+      resetFace();
+      T.swallow=true;
+      return;
+    }
     if(T.phase==="idle"){
-      if(store.opts.inspect){ startInspection(); T.swallow=true; return; }
+      var m = store.opts.mode;
+      if(m==="wca"){ startInspection(); T.swallow=true; return; }
+      if(m!=="hold"){ startCountdown(); T.swallow=true; return; }
       beginHold("hold"); return;
     }
     if(T.phase==="inspect"){ beginHold("ihold"); return; }
@@ -539,6 +788,7 @@ import * as LB from "./leaderboard.js";
     if(T.phase==="armed"||T.phase==="iarmed") startRun();
   }
   function startRun(){
+    setShown($("stop-catch"), true);
     T.pending=0;
     if(T.inspStart){
       var el=performance.now()-T.inspStart;
@@ -547,7 +797,7 @@ import * as LB from "./leaderboard.js";
     }
     T.phase="running";
     T.start=performance.now();
-    cancelAnimationFrame(T.raf);
+    stopLoops();
     timerEl.className="t-time num";
     timerEl.textContent="0.00";
     paint();
@@ -559,12 +809,14 @@ import * as LB from "./leaderboard.js";
   }
   function stopRun(){
     var ms=performance.now()-T.start;
+    setShown($("stop-catch"), false);
     T.phase="idle";
-    cancelAnimationFrame(T.raf);
+    stopLoops();
     buzz(28);
     timerEl.className="t-time num";
     timerEl.textContent=fmt(ms);
     var list=listOf(T.id);
+    var prevBest = bestSingle(list);          // read BEFORE the new solve lands
     var rec={ t:Math.round(ms), p:T.pending, d:Date.now(), s:T.scramble };
     if(pendingBreak[T.id]){ rec.b=1; pendingBreak[T.id]=false; }
     list.push(rec);
@@ -574,6 +826,9 @@ import * as LB from "./leaderboard.js";
     var v=eff(rec);
     timerEl.textContent = isFinite(v) ? fmt(v) : "DNF";
     timerEl.classList.toggle("dnf", !isFinite(v));
+    // Only a time that actually beats a previous best counts -- a first-ever
+    // solve is technically a record but celebrating it means nothing.
+    if(isFinite(v) && prevBest !== null && v < prevBest) celebrate(v);
     syncActions();
     setShown($("t-actions"), true);
     newScramble();
@@ -584,6 +839,8 @@ import * as LB from "./leaderboard.js";
   }
 
   padEl.addEventListener("pointerdown", function(e){ e.preventDefault(); onPress(); });
+  $("stop-catch").addEventListener("pointerdown", function(e){ e.preventDefault(); onPress(); });
+  $("stop-catch").addEventListener("contextmenu", function(e){ e.preventDefault(); });
   padEl.addEventListener("contextmenu", function(e){ e.preventDefault(); });
   window.addEventListener("pointerup", function(){ if(current==="timer") onRelease(); });
   window.addEventListener("pointercancel", function(){ if(current==="timer") onRelease(); });
@@ -594,7 +851,7 @@ import * as LB from "./leaderboard.js";
     if(e.key==="Escape"){
       if(sheetOpen()){ setSheet(false); return; }
       if(T.phase==="running"){ e.preventDefault(); stopRun(); return; }
-      if(T.phase==="inspect"){ cancelAnimationFrame(T.raf); resetFace(); return; }
+      if(T.phase==="inspect"){ stopLoops(); resetFace(); return; }
       backHome(); return;
     }
     if(T.phase==="running"){ e.preventDefault(); stopRun(); }
@@ -604,21 +861,32 @@ import * as LB from "./leaderboard.js";
     if(e.code==="Space"||e.key===" "){ e.preventDefault(); onRelease(); }
   });
 
-  function backHome(){ cancelAnimationFrame(T.raf); resetFace(); renderHome(); show("home"); }
+  function backHome(){ stopLoops(); resetFace(); renderHome(); show("home"); }
   $("t-back").addEventListener("click", backHome);
   $("t-newscr").addEventListener("click", function(){ if(T.phase==="idle") newScramble(); });
   $("t-tosession").addEventListener("click", function(){ openSession(T.id); });
-  $("t-inspect").addEventListener("click", function(){
-    store.opts.inspect=!store.opts.inspect;
+  $("t-mode").addEventListener("click", function(){
+    store.opts.mode = mode().next;
     save();
     syncInspectBtn();
-    if(T.phase==="inspect"){ cancelAnimationFrame(T.raf); resetFace(); } else paint();
+    stopLoops();
+    resetFace();
+  });
+  $("t-sound").addEventListener("click", function(){
+    store.opts.sound = !store.opts.sound;
+    save();
+    syncInspectBtn();
+    if(store.opts.sound) beepTick(true);   // confirm it is audible
   });
   function syncInspectBtn(){
-    var b=$("t-inspect"), narrow=window.matchMedia("(max-width:600px)").matches;
-    b.setAttribute("aria-pressed", String(!!store.opts.inspect));
-    b.textContent = store.opts.inspect ? (narrow ? "15s" : "Inspection 15s")
-                                       : (narrow ? "Insp off" : "Inspection off");
+    var narrow = window.matchMedia("(max-width:600px)").matches;
+    var b = $("t-mode"), m = mode();
+    b.textContent = narrow ? m.short : m.label;
+    b.setAttribute("aria-pressed", String(store.opts.mode !== "hold"));
+    var sb = $("t-sound");
+    sb.setAttribute("aria-pressed", String(!!store.opts.sound));
+    sb.textContent = store.opts.sound ? (narrow ? "\ud83d\udd0a" : "Sound on")
+                                      : (narrow ? "\ud83d\udd07" : "Sound off");
   }
   window.addEventListener("orientationchange", function(){ setTimeout(function(){ syncInspectBtn(); syncScrambleBtn(); }, 120); });
 

@@ -285,3 +285,41 @@ tr.me td{background:color-mix(in srgb,var(--accent) 8%,var(--bg))}
 tr.me td.nm{color:var(--accent)}
 td.medal{font-family:var(--font-num);font-weight:700;color:var(--muted);width:1%}
 tr.gold td.medal{color:var(--pb)}
+
+/* ---------- countdown + personal-best celebration ---------- */
+.t-time.count{color:var(--accent)}
+.t-time.count-soon{color:var(--warn)}
+.t-time.go{color:var(--go)}
+
+.confetti{
+  position:fixed;inset:0;z-index:70;pointer-events:none;
+}
+.pb-burst{
+  /* anchored just under the top bar so it never lands on the digits */
+  position:fixed;left:50%;top:calc(env(safe-area-inset-top, 0px) + 56px);
+  transform:translateX(-50%) scale(.86);
+  z-index:75;pointer-events:none;text-align:center;
+  padding:16px 26px;border-radius:16px;
+  background:color-mix(in srgb, var(--pb-fill) 92%, #fff);
+  color:#221a00;
+  box-shadow:0 18px 46px -14px rgba(0,0,0,.45);
+  opacity:0;transition:opacity .22s ease, transform .28s cubic-bezier(.2,1.5,.4,1);
+}
+.pb-burst.show{opacity:1;transform:translateX(-50%) scale(1)}
+.pb-burst b{
+  display:block;font-size:13px;font-weight:800;letter-spacing:.09em;
+  text-transform:uppercase;margin-bottom:2px;
+}
+.pb-burst span{display:block;font-size:34px;font-weight:700;letter-spacing:-.04em;line-height:1.05}
+@media (prefers-reduced-motion: reduce){
+  .pb-burst{transition:opacity .2s ease}
+  .pb-burst.show{transform:translateX(-50%) scale(1)}
+}
+
+/* While the timer runs the whole screen is the stop button: a solver finishes by
+   putting the cube down and both hands flat, and a stray palm must never be able
+   to hit a control in the bar behind it. */
+.stop-catch{
+  position:fixed;inset:0;z-index:65;background:transparent;
+  touch-action:none;-webkit-tap-highlight-color:transparent;cursor:pointer;
+}
