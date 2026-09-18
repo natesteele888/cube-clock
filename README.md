@@ -3,7 +3,9 @@
 A speedcubing timer for 2×2, 3×3, 4×4, 5×5, Pyraminx and Megaminx, with a
 shared leaderboard. Built for a phone held sideways.
 
-**Setup:** see [SETUP.md](SETUP.md).
+Runs as-is with no setup or accounts — every solve is stored in the browser.
+The shared leaderboard is written and dormant: fill in `public/firebase-config.js`
+and deploy ([SETUP.md](SETUP.md)) and it appears. Until then it stays hidden.
 
 ## What it does
 
@@ -21,6 +23,7 @@ shared leaderboard. Built for a phone held sideways.
   practised, a trend graph of every single with a rolling average of 5 over it,
   and the full solve history with scrambles.
 - **Shared leaderboard**, live, per puzzle, with optional group codes.
+  *(Off by default — see SETUP.md when you want it.)*
 - **Backup** to a file or to text you can paste somewhere safe.
 
 ## Layout

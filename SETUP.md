@@ -1,5 +1,9 @@
 # Setting up the leaderboard
 
+> **Not needed yet.** The app runs as a complete single-player timer with none
+> of this done — the leaderboard simply stays hidden. Come back to this page
+> when you want to switch it on.
+
 About 10 minutes, all on the free tier. Until you finish, the app already works
 as a full local timer — the leaderboard just reports itself as off.
 
