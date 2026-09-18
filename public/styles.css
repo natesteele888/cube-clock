@@ -383,3 +383,27 @@ tr.gold td.medal{color:var(--pb)}
 .rg-inner svg{color:var(--muted);margin-bottom:14px}
 .rg-inner b{display:block;font-size:18px;font-weight:800;letter-spacing:-.02em;color:var(--ink);margin-bottom:6px}
 .rg-inner p{margin:0 0 18px;font-size:13.5px;color:var(--muted)}
+
+/* small emphasis inside a tutorial step, naming the control it refers to */
+.tut-steps i{
+  font-style:normal;font-family:var(--font-num);font-size:13px;font-weight:700;
+  background:var(--surface-2);border-radius:6px;padding:1px 6px;
+}
+
+/* The way back to solving. Strong fill for contrast in both themes, with the
+   accent spent on a slow radiating ring rather than on the text. */
+.cta{
+  background:var(--ink) !important;
+  color:var(--bg) !important;
+  border-color:var(--ink) !important;
+  font-weight:700 !important;
+}
+.cta:hover{opacity:.9}
+@media (prefers-reduced-motion: no-preference){
+  .cta{animation:ctaGlow 2.4s ease-in-out infinite}
+}
+@keyframes ctaGlow{
+  0%   { box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
+  70%  { box-shadow:0 0 0 13px color-mix(in srgb, var(--accent) 0%, transparent); }
+  100% { box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); }
+}

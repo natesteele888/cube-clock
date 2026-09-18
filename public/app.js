@@ -661,6 +661,7 @@ import * as LB from "./leaderboard.js";
     syncScrambleBtn();
     resetFace();
     show("timer");
+    maybeTimerTutorial();
     sharedRows = [];
     stopWatch("timer");
     timerUnsub = LB.watch(id, 5, function(rows){
@@ -824,6 +825,7 @@ import * as LB from "./leaderboard.js";
   }
   function onPress(){
     if(sheetOpen()) return;
+    if(!$("tut2").hidden || !$("tut").hidden) return;   // a dialog is in front
     if(T.phase==="running"){ stopRun(); T.swallow=true; return; }
     if(T.phase==="count"){          // a second tap calls it off
       stopLoops();
@@ -1630,7 +1632,18 @@ import * as LB from "./leaderboard.js";
   });
 
   /* ============ boot ============ */
-  var SEEN_KEY = "cubeclock.seen";
+  var SEEN_KEY = "cubeclock.seen", SEEN_TIMER_KEY = "cubeclock.seen.timer";
+  $("tut2-go").addEventListener("click", function(){
+    setShown($("tut2"), false);
+    try{ localStorage.setItem(SEEN_TIMER_KEY, "1"); }catch(err){ /* blocked storage */ }
+  });
+  /* Shown once, the first time the timer is opened -- the options only make
+     sense with the bar actually in front of you. */
+  function maybeTimerTutorial(){
+    var seen = false;
+    try{ seen = localStorage.getItem(SEEN_TIMER_KEY) === "1"; }catch(err){ seen = false; }
+    if(!seen) setShown($("tut2"), true);
+  }
   $("tut-go").addEventListener("click", function(){
     setShown($("tut"), false);
     try{ localStorage.setItem(SEEN_KEY, "1"); }catch(err){ /* blocked storage */ }
