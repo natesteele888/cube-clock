@@ -5,3 +5,4 @@ node_modules/
 ._*
 public/_*.part
 archive/
+build/
