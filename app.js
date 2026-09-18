@@ -1081,22 +1081,44 @@ import * as LB from "./leaderboard.js";
     tell("Cleared.");
   });
 
-  if(window.claude && typeof window.claude.use==="function"){
+  /* Saving the backup as a file works two different ways depending on where this
+     is running. Inside the Claude Artifact viewer a page cannot start its own
+     download, so the platform is asked to offer the file. Served normally, an
+     ordinary object-URL download is the right thing. */
+  function nativeSave(){
+    try{
+      var blob = new Blob([backupText()], { type:"application/json" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = "cube-clock-times.json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+      tell("Backup saved.");
+    }catch(err){
+      tell("Could not save the file. Use Copy all times as text instead.", true);
+    }
+  }
+  if(window.claude && typeof window.claude.use === "function"){
     window.claude.use("downloads").then(function(dl){
-      if(!dl) return;
-      var btn=$("b-export");
-      setShown(btn,true);
+      if(!dl) return;                      // host will not allow it: copy-as-text remains
+      var btn = $("b-export");
+      setShown(btn, true);
       btn.addEventListener("click", function(){
         dl.save({ filename:"cube-clock-times.json", data:backupText() }).then(
           function(){ tell("Backup saved."); },
           function(err){
-            if(err && err.code==="declined") return;
+            if(err && err.code === "declined") return;
             tell("Could not save the file. Use Copy all times as text instead.", true);
           });
       });
     }, function(){ /* unavailable: the copy/paste backup still works */ });
+  } else {
+    setShown($("b-export"), true);
+    $("b-export").addEventListener("click", nativeSave);
   }
-
 
   /* ============ leaderboard view ============ */
   var leadId = "333";
