@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d0f13" media="(prefers-color-scheme: dark)">
+<meta name="description" content="A speedcubing timer with scrambles, WCA inspection, sessions and a shared leaderboard.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Cube Clock</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Azeret+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar" id="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2 22 7.4v9.2L12 22 2 16.6V7.4Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M2 7.4 12 12.6l10-5.2M12 12.6V22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      </svg>
+      <b>Cube Clock</b>
+    </div>
+    <div class="tally" id="tally"></div>
+    <button class="ghost" id="nav-leaders">Leaderboard</button>
+    <button class="ghost" id="nav-session">Session</button>
+    <button class="ghost" id="nav-stats">Statistics</button>
+  </div>
+</header>
+
+<main id="view-home">
+  <div class="wrap">
+    <div class="lede">
+      <h1>Pick a puzzle, hold, go.</h1>
+      <p>Every solve is scrambled, timed and kept &mdash; so you can watch the times come down.</p>
+    </div>
+    <div class="lb-bar" id="lb-bar">
+      <span class="lb-dot" id="lb-dot" aria-hidden="true"></span>
+      <span class="lb-text" id="lb-text">Checking the leaderboard&hellip;</span>
+      <button class="mini" id="lb-edit">Set your name</button>
+      <form class="lb-form v-off" id="lb-form" hidden>
+        <input id="lb-input" maxlength="16" placeholder="Your name" autocomplete="off" aria-label="Your leaderboard name">
+        <input id="lb-ginput" maxlength="24" placeholder="Group code (optional)" autocomplete="off" aria-label="Group code">
+        <button class="mini" type="submit">Save</button>
+        <button class="mini" type="button" id="lb-cancel">Cancel</button>
+      </form>
+    </div>
+    <div class="grid" id="cube-grid"></div>
+    <p class="foot">Times are stored in this browser and stay here. Back them up from Statistics.</p>
+  </div>
+</main>
+
+<section id="view-timer" class="v-off" hidden aria-label="Solve timer">
+  <div class="t-top">
+    <button class="ghost" id="t-back" aria-label="Back to the puzzles"><span class="lbl-lg">&larr; Puzzles</span><span class="lbl-sm">&larr;</span></button>
+    <div class="t-badge"><span class="sw" id="t-sw"></span><span id="t-name"></span></div>
+    <div class="t-tools">
+      <button class="ghost" id="t-inspect" aria-pressed="false">Inspection off</button>
+      <button class="ghost" id="t-newscr"><span class="lbl-lg">New scramble</span><span class="lbl-sm">Scramble</span></button>
+      <button class="ghost" id="t-tosession">Session</button>
+    </div>
+  </div>
+
+  <div class="t-body">
+    <aside class="t-side" id="t-side-el">
+      <div class="blk">
+        <i>Personal best</i>
+        <div class="pb-big" id="s-pb">&mdash;</div>
+        <small class="pb-when" id="s-pbwhen"></small>
+      </div>
+      <div class="blk">
+        <i>Last 5</i>
+        <ol class="rows" id="s-last"></ol>
+        <button class="mini" id="s-more" style="margin-top:8px">Show more</button>
+        <ol class="rows more-list v-off" id="s-morelist" hidden></ol>
+      </div>
+      <div class="blk">
+        <i>This session</i>
+        <div class="sess-grid" id="s-sess"></div>
+      </div>
+      <div class="blk only-portrait">
+        <i>Leaderboard</i>
+        <div class="lead-list" id="s-lead-list" style="flex-wrap:wrap"></div>
+      </div>
+      <button class="ghost only-portrait" id="s-close" style="align-self:flex-start">Close</button>
+    </aside>
+
+    <div class="t-main">
+      <div class="t-scramble num" id="t-scramble"></div>
+      <div class="rotate-tip">Turn your phone sideways for the full timer.</div>
+      <div class="t-pad" id="t-pad" role="button" tabindex="0" aria-label="Start and stop the timer">
+        <div class="t-time num" id="t-time">0.00</div>
+        <div class="t-hint" id="t-hint"></div>
+      </div>
+      <div class="t-actions v-off" id="t-actions" hidden>
+        <button data-act="plus2">+2</button>
+        <button data-act="dnf">DNF</button>
+        <button data-act="del">Delete</button>
+      </div>
+      <button class="t-strip" id="t-strip" aria-expanded="false">
+        <span class="ts-main" id="ts-main"></span>
+        <span class="ts-cue">Stats &amp; times</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="t-backdrop" id="t-backdrop"></div>
+  <div class="t-lead">
+    <i>Leaderboard</i>
+    <div class="lead-list" id="t-lead-list"></div>
+  </div>
+</section>
+
+<section id="view-session" class="v-off" hidden>
+  <div class="wrap">
+    <div class="pills" id="sess-pills"></div>
+    <div class="sec-head">
+      <h2 id="sess-title"></h2>
+      <span class="note" id="sess-sub"></span>
+      <span style="margin-left:auto;display:flex;gap:8px">
+        <button class="ghost" id="sess-new">Start a new session</button>
+        <button class="ghost" id="sess-solve">Time a solve</button>
+      </span>
+    </div>
+    <div id="sess-current"></div>
+    <div class="sec-head"><h2>Earlier sessions</h2><span class="note">A new session starts after an hour away, or whenever you start one.</span></div>
+    <div id="sess-past"></div>
+    <p class="foot"><button class="ghost" id="sess-home">&larr; Back to the puzzles</button></p>
+  </div>
+</section>
+
+<section id="view-leaders" class="v-off" hidden>
+  <div class="wrap">
+    <div class="pills" id="lead-pills"></div>
+    <div class="sec-head">
+      <h2 id="lead-title"></h2>
+      <span class="note" id="lead-sub"></span>
+      <button class="ghost" style="margin-left:auto" id="lead-solve">Time a solve</button>
+    </div>
+    <div id="lead-wrap"></div>
+    <p class="foot" id="lead-foot"></p>
+  </div>
+</section>
+
+<section id="view-stats" class="v-off" hidden>
+  <div class="wrap">
+    <div class="pills" id="stat-pills"></div>
+    <div class="sec-head">
+      <h2 id="stat-title"></h2>
+      <span class="note" id="stat-sub"></span>
+      <button class="ghost" style="margin-left:auto" id="stat-solve">Time a solve</button>
+    </div>
+    <div class="tiles" id="stat-tiles"></div>
+    <div class="sec-head"><h2>Trend</h2><span class="note">Every single, with a rolling average of 5 laid over it.</span></div>
+    <div id="chart-wrap"></div>
+    <div class="sec-head"><h2>Solve history</h2><span class="note" id="hist-note"></span></div>
+    <div id="hist-wrap"></div>
+    <div class="sec-head"><h2>Backup</h2><span class="note">Keep a copy of your times somewhere safe.</span></div>
+    <div style="display:flex;flex-direction:column;gap:10px;align-items:stretch">
+      <div class="backup">
+        <button class="ghost v-off" id="b-export" hidden>Download backup file</button>
+        <button class="ghost" id="b-copy">Copy all times as text</button>
+        <button class="ghost" id="b-restore">Restore from text</button>
+        <span class="say" id="b-say"></span>
+      </div>
+      <textarea class="v-off" id="b-box" hidden spellcheck="false" aria-label="Backup data"></textarea>
+    </div>
+    <p class="foot"><button class="mini danger" id="b-clear">Delete every time for this puzzle</button></p>
+  </div>
+</section>
+<script type="module" src="app.js"></script>
+</body>
+</html>
