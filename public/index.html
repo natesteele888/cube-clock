@@ -60,7 +60,8 @@
     <button class="ghost" id="t-back" aria-label="Back to the puzzles"><span class="lbl-lg">&larr; Puzzles</span><span class="lbl-sm">&larr;</span></button>
     <div class="t-badge"><span class="sw" id="t-sw"></span><span id="t-name"></span></div>
     <div class="t-tools">
-      <button class="ghost" id="t-inspect" aria-pressed="false">Inspection off</button>
+      <button class="ghost" id="t-mode">Hold to start</button>
+      <button class="ghost" id="t-sound" aria-pressed="true">Sound on</button>
       <button class="ghost" id="t-scrtoggle" aria-pressed="false">Scrambles off</button>
       <button class="ghost" id="t-newscr"><span class="lbl-lg">New scramble</span><span class="lbl-sm">Scramble</span></button>
       <button class="ghost" id="t-tosession">Session</button>
@@ -110,6 +111,11 @@
     </div>
   </div>
 
+  <div class="pb-burst v-off" id="pb-burst" hidden aria-live="polite">
+    <b>New personal best!</b>
+    <span class="num" id="pb-burst-time"></span>
+  </div>
+  <div class="stop-catch v-off" id="stop-catch" hidden aria-hidden="true"></div>
   <div class="t-backdrop" id="t-backdrop"></div>
   <div class="t-lead">
     <i>Leaderboard</i>
