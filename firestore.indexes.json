@@ -1,0 +1,14 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "scores",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "group", "order": "ASCENDING" },
+        { "fieldPath": "puzzle", "order": "ASCENDING" },
+        { "fieldPath": "best", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

@@ -1,0 +1,12 @@
+{
+  "name": "cube-clock",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Speedcubing timer with scrambles, inspection, sessions and a shared leaderboard",
+  "scripts": {
+    "dev": "python3 -m http.server 8742 --directory public",
+    "deploy": "firebase deploy",
+    "deploy:site": "firebase deploy --only hosting",
+    "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes"
+  }
+}

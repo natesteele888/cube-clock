@@ -1,0 +1,83 @@
+rules_version = '2';
+
+// Cube Clock leaderboard rules.
+//
+// Shape of the data:
+//   /players/{uid}                     public profile: { name, group, updatedAt }
+//   /scores/{uid}__{puzzle}            one row per player per puzzle
+//
+// Everyone (including signed-out visitors) may READ the leaderboard.
+// A signed-in player may only write their OWN rows, and only values that are
+// physically plausible. This is not a substitute for trust, but it stops the
+// obvious "edit someone else's time" and "submit 0.00" attacks.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isMe(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // Puzzles this deployment accepts.
+    function knownPuzzle(p) {
+      return p in ['222', '333', '444', '555', 'pyra', 'mega'];
+    }
+
+    // A display name: 1-16 characters. Deliberately NOT a regex -- a rules-side
+    // regex bug fails closed and would block every write silently. The client
+    // strips control characters before sending (see cleanName in leaderboard.js).
+    function okName(n) {
+      return n is string && n.size() >= 1 && n.size() <= 16;
+    }
+
+    // A group code, or 'all' for the open board.
+    function okGroup(g) {
+      return g is string && g.size() >= 1 && g.size() <= 24 && g.matches('[a-z0-9-]+');
+    }
+
+    // Milliseconds. The fastest legitimate single ever recorded on any of these
+    // puzzles is well over 300ms, and nothing takes longer than an hour.
+    function okTime(t) {
+      return t is number && t >= 300 && t <= 3600000;
+    }
+
+    // An average field may also be null (not enough solves yet).
+    function okAvg(a) {
+      return a == null || okTime(a);
+    }
+
+    match /players/{uid} {
+      allow read: if true;
+      allow write: if isMe(uid)
+                   && request.resource.data.keys().hasOnly(['name', 'group', 'updatedAt'])
+                   && okName(request.resource.data.name)
+                   && okGroup(request.resource.data.group);
+    }
+
+    match /scores/{docId} {
+      allow read: if true;
+
+      allow create, update: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        // the document id is derived from the owner, so nobody can squat a row
+        && docId == request.auth.uid + '__' + request.resource.data.puzzle
+        && request.resource.data.keys().hasOnly(
+             ['uid', 'name', 'group', 'puzzle', 'best', 'ao5', 'ao12', 'solves', 'updatedAt'])
+        && knownPuzzle(request.resource.data.puzzle)
+        && okName(request.resource.data.name)
+        && okGroup(request.resource.data.group)
+        && okTime(request.resource.data.best)
+        && okAvg(request.resource.data.ao5)
+        && okAvg(request.resource.data.ao12)
+        && request.resource.data.solves is int
+        && request.resource.data.solves >= 1
+        && request.resource.data.solves <= 1000000;
+
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+  }
+}
