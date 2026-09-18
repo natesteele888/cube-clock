@@ -247,7 +247,7 @@ import * as LB from "./leaderboard.js";
 
   /* ============ storage ============ */
   var KEY="cubeclock.v1";
-  var store={ solves:{}, opts:{ mode:"c3", sound:true, scramble:false } };
+  var store={ solves:{}, opts:{ mode:"c3", sound:true, scramble:false, view:"landscape" } };
   function load(){
     try{
       var raw=localStorage.getItem(KEY);
@@ -257,6 +257,7 @@ import * as LB from "./leaderboard.js";
       if(d && d.opts && typeof d.opts==="object"){
         store.opts.scramble = !!d.opts.scramble;
         if(typeof d.opts.sound === "boolean") store.opts.sound = d.opts.sound;
+        if(d.opts.view === "vertical" || d.opts.view === "landscape") store.opts.view = d.opts.view;
         if(MODES[d.opts.mode]) store.opts.mode = d.opts.mode;
         else if(d.opts.inspect) store.opts.mode = "wca";   // carried over from the old toggle
       }
@@ -585,6 +586,27 @@ import * as LB from "./leaderboard.js";
     try{ navigator.vibrate(pattern); }catch(err){ /* unsupported */ }
   }
 
+  /* The phone paints its status bar from theme-color. A fixed value means a
+     white bar above a dark app, so it is kept in step with the real --bg. */
+  var themeMeta = null;
+  function syncThemeColor(){
+    try{
+      var bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+      if(!bg) return;
+      if(!themeMeta){
+        var old = document.querySelectorAll('meta[name="theme-color"]');
+        for(var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
+        themeMeta = document.createElement("meta");
+        themeMeta.setAttribute("name", "theme-color");
+        document.head.appendChild(themeMeta);
+      }
+      themeMeta.setAttribute("content", bg);
+    }catch(err){ /* nothing to do */ }
+  }
+  var darkMq = window.matchMedia("(prefers-color-scheme: dark)");
+  if(darkMq.addEventListener) darkMq.addEventListener("change", syncThemeColor);
+  else if(darkMq.addListener) darkMq.addListener(syncThemeColor);
+
   /* ============ home ============ */
   function renderHome(){
     var html="";
@@ -607,7 +629,7 @@ import * as LB from "./leaderboard.js";
   });
 
   /* ============ timer ============ */
-  var HOLD_MS=320, INSPECT_MS=15000;
+  var HOLD_MS=320, INSPECT_MS=15000, INSPECT_WARN=5000;
   /* The start modes are mutually exclusive, so one cycling control expresses them
      better than several competing on/off switches. */
   var MODES = {
@@ -615,11 +637,11 @@ import * as LB from "./leaderboard.js";
     c5:   { next:"c10",  secs:5,  label:"Countdown 5s",  short:"5s"  },
     c10:  { next:"hold", secs:10, label:"Countdown 10s", short:"10s" },
     hold: { next:"wca",  secs:0,  label:"Hold to start", short:"Hold"},
-    wca:  { next:"c3",   secs:0,  label:"Inspection 15s",short:"WCA" }
+    wca:  { next:"c3",   secs:5,  label:"Inspect 15s",   short:"15s" }
   };
   function mode(){ return MODES[store.opts.mode] || MODES.c3; }
   var T={ id:"333", scramble:"", phase:"idle", start:0, inspStart:0, raf:0, hold:0, iv:0,
-          swallow:false, lastIdx:-1, pending:0, moreOpen:false,
+          swallow:false, editIdx:-1, pending:0, moreOpen:false, delTimer:0,
           countEnd:0, lastBeep:-1 };
   function stopLoops(){
     cancelAnimationFrame(T.raf);
@@ -631,7 +653,7 @@ import * as LB from "./leaderboard.js";
                 navigator.maxTouchPoints > 0 || ("ontouchstart" in window);
 
   function openTimer(id){
-    T.id=id; T.lastIdx=-1; T.moreOpen=false;
+    T.id=id; T.editIdx=-1; T.moreOpen=false;
     var p=BY_ID[id];
     $("t-name").textContent=p.name;
     $("t-sw").style.background=p.accent;
@@ -653,20 +675,49 @@ import * as LB from "./leaderboard.js";
     $("t-scramble").textContent=T.scramble;
   }
   function syncScrambleBtn(){
-    var on=!!store.opts.scramble, b=$("t-scrtoggle");
+    var on=!!store.opts.scramble, b=$("h-scrtoggle");
     b.setAttribute("aria-pressed", String(on));
-    // On a phone the pressed styling carries the state, so the label can be short.
-    b.textContent = window.matchMedia("(max-width:600px)").matches
-      ? "Scramble" : (on ? "Scrambles on" : "Scrambles off");
+    b.textContent = on ? "Scrambles: on" : "Scrambles: off";
     setShown($("t-scramble"), on);
     setShown($("t-newscr"), on);
   }
-  $("t-scrtoggle").addEventListener("click", function(){
+  $("h-scrtoggle").addEventListener("click", function(){
     store.opts.scramble=!store.opts.scramble;
     save();
     syncScrambleBtn();
     if(current==="stats") renderStats();
   });
+  $("rg-vertical").addEventListener("click", function(){
+    store.opts.view = "vertical";
+    save();
+    syncViewBtn();
+  });
+  $("t-view").addEventListener("click", function(){
+    store.opts.view = (store.opts.view === "vertical") ? "landscape" : "vertical";
+    save();
+    setSheet(false);
+    syncViewBtn();
+  });
+  function syncViewBtn(){
+    var vertical = store.opts.view === "vertical";
+    rootEl.classList.toggle("view-vertical", vertical);
+    $("t-view").textContent = vertical ? "Vertical" : "Landscape";
+    $("t-view").setAttribute("aria-pressed", String(vertical));
+    lockLandscape();
+  }
+  /* An installed app can be pinned sideways; a browser tab cannot, and refusing
+     is normal rather than an error. */
+  function lockLandscape(){
+    try{
+      if(!screen.orientation) return;
+      if(store.opts.view === "landscape" && screen.orientation.lock){
+        var pr = screen.orientation.lock("landscape");
+        if(pr && pr.catch) pr.catch(function(){});
+      } else if(screen.orientation.unlock){
+        screen.orientation.unlock();
+      }
+    }catch(err){ /* not permitted here */ }
+  }
   function resetFace(){
     setSheet(false);
     stopLoops();
@@ -676,6 +727,7 @@ import * as LB from "./leaderboard.js";
     timerEl.className="t-time num";
     timerEl.textContent="0.00";
     setShown($("t-actions"), false);
+    disarmDelete();
     paint();
     renderSide();
   }
@@ -688,8 +740,8 @@ import * as LB from "./leaderboard.js";
     else if(T.phase==="count") h="Get ready&hellip;";
     else if(T.phase==="armed"||T.phase==="iarmed") h="Let go!";
     else if(T.phase==="hold"||T.phase==="ihold") h="Keep holding&hellip;";
-    else if(T.phase==="inspect") h = isTouch ? "Inspecting &mdash; hold when you are ready" : "Inspecting &mdash; hold <kbd>space</kbd> when ready";
-    else if(m==="wca") h = isTouch ? "Tap for 15 seconds of inspection" : "Press <kbd>space</kbd> for 15 seconds of inspection";
+    else if(T.phase==="inspect") h="Inspect the cube &mdash; tap to skip ahead";
+    else if(m==="wca") h = (isTouch ? "Tap to inspect for 15 seconds" : "Press <kbd>space</kbd> to inspect for 15 seconds") + ", then a 5 second countdown";
     else if(m==="hold") h = isTouch ? "Press and hold, then let go" : "Hold <kbd>space</kbd> to get ready";
     else h = (isTouch ? "Tap when you are ready" : "Press <kbd>space</kbd> when ready") +
              " \u2014 " + mode().secs + " second countdown";
@@ -711,25 +763,31 @@ import * as LB from "./leaderboard.js";
   function startInspection(){
     T.phase="inspect";
     T.inspStart=performance.now();
+    T.warned=false;
     setShown($("t-actions"), false);
     stopLoops();
     function istep(){
-      if(T.phase!=="inspect" && T.phase!=="ihold" && T.phase!=="iarmed") return;
-      var el=performance.now()-T.inspStart, cls="insp", txt;
-      if(el < INSPECT_MS){
-        txt=String(Math.max(0, Math.ceil((INSPECT_MS-el)/1000)));
-        if(el > 8000) cls="insp-warn";
-      } else if(el < 17000){ txt="+2"; cls="insp-warn"; }
-      else { txt="DNF"; cls="insp-bad"; }
-      timerEl.className="t-time num "+cls;
-      timerEl.textContent=txt;
+      if(T.phase!=="inspect") return;
+      var left = INSPECT_MS - (performance.now() - T.inspStart);
+      if(left <= 0){
+        stopLoops();
+        startCountdown(5);                   // straight into the countdown
+        return;
+      }
+      if(!T.warned && left <= INSPECT_WARN){
+        T.warned = true;
+        tone(440, 0.38, 0.26, "triangle");   // five seconds left
+        buzz([0, 70, 70, 70]);
+      }
+      timerEl.className = "t-time num " + (left <= INSPECT_WARN ? "insp-warn" : "insp");
+      timerEl.textContent = String(Math.ceil(left / 1000));
     }
-    T.iv = setInterval(istep, 100);
+    T.iv = setInterval(istep, 80);
     istep();
     paint();
   }
-  function startCountdown(){
-    var secs = mode().secs;
+
+  function startCountdown(secs){
     T.phase="count";
     T.countEnd = performance.now() + secs*1000;
     T.lastBeep = -1;
@@ -776,10 +834,10 @@ import * as LB from "./leaderboard.js";
     if(T.phase==="idle"){
       var m = store.opts.mode;
       if(m==="wca"){ startInspection(); T.swallow=true; return; }
-      if(m!=="hold"){ startCountdown(); T.swallow=true; return; }
+      if(m!=="hold"){ startCountdown(mode().secs); T.swallow=true; return; }
       beginHold("hold"); return;
     }
-    if(T.phase==="inspect"){ beginHold("ihold"); return; }
+    if(T.phase==="inspect"){ stopLoops(); startCountdown(5); T.swallow=true; return; }  // skip ahead
   }
   function onRelease(){
     if(T.swallow){ T.swallow=false; return; }
@@ -790,11 +848,6 @@ import * as LB from "./leaderboard.js";
   function startRun(){
     setShown($("stop-catch"), true);
     T.pending=0;
-    if(T.inspStart){
-      var el=performance.now()-T.inspStart;
-      if(el > 17000) T.pending=-1;
-      else if(el > INSPECT_MS) T.pending=2000;
-    }
     T.phase="running";
     T.start=performance.now();
     stopLoops();
@@ -820,7 +873,7 @@ import * as LB from "./leaderboard.js";
     var rec={ t:Math.round(ms), p:T.pending, d:Date.now(), s:T.scramble };
     if(pendingBreak[T.id]){ rec.b=1; pendingBreak[T.id]=false; }
     list.push(rec);
-    T.lastIdx=list.length-1;
+    T.editIdx=list.length-1;
     T.inspStart=0; T.pending=0;
     save();
     var v=eff(rec);
@@ -882,6 +935,7 @@ import * as LB from "./leaderboard.js";
     var narrow = window.matchMedia("(max-width:600px)").matches;
     var b = $("t-mode"), m = mode();
     b.textContent = narrow ? m.short : m.label;
+    syncViewBtn();
     b.setAttribute("aria-pressed", String(store.opts.mode !== "hold"));
     var sb = $("t-sound");
     sb.setAttribute("aria-pressed", String(!!store.opts.sound));
@@ -891,23 +945,45 @@ import * as LB from "./leaderboard.js";
   window.addEventListener("orientationchange", function(){ setTimeout(function(){ syncInspectBtn(); syncScrambleBtn(); }, 120); });
 
   function syncActions(){
-    var s=listOf(T.id)[T.lastIdx], btns=$("t-actions").querySelectorAll("button");
+    var list=listOf(T.id), s=list[T.editIdx], btns=$("t-actions").querySelectorAll("button");
     btns[0].classList.toggle("on", !!s && s.p===2000);
     btns[1].classList.toggle("on", !!s && s.p===-1);
+    var lbl=$("t-act-label");
+    if(!s){ lbl.textContent=""; return; }
+    var v=eff(s);
+    lbl.textContent = (T.editIdx===list.length-1 ? "Last solve " : "Solve #"+(T.editIdx+1)+" ") +
+                      (isFinite(v) ? fmt(v) : "DNF");
+  }
+  function disarmDelete(){
+    var b = $("t-actions").querySelector('[data-act="del"]');
+    clearTimeout(T.delTimer);
+    b.removeAttribute("data-armed");
+    b.classList.remove("danger-armed");
+    b.textContent = "Delete";
   }
   $("t-actions").addEventListener("click", function(e){
     var b=e.target.closest("[data-act]");
     if(!b) return;
-    var act=b.getAttribute("data-act"), list=listOf(T.id), s=list[T.lastIdx];
+    var act=b.getAttribute("data-act"), list=listOf(T.id), s=list[T.editIdx];
     if(!s) return;
-    if(act==="plus2") s.p = (s.p===2000) ? 0 : 2000;
-    else if(act==="dnf") s.p = (s.p===-1) ? 0 : -1;
-    else {
-      list.splice(T.lastIdx,1); T.lastIdx=-1;
+    if(act==="del"){
+      if(b.getAttribute("data-armed") !== "1"){
+        b.setAttribute("data-armed","1");
+        b.classList.add("danger-armed");
+        b.textContent = "Delete?";
+        clearTimeout(T.delTimer);
+        T.delTimer = setTimeout(disarmDelete, 3500);   // forget it if they hesitate
+        return;
+      }
+      disarmDelete();
+      list.splice(T.editIdx,1); T.editIdx=-1;
       setShown($("t-actions"), false);
       timerEl.className="t-time num"; timerEl.textContent="0.00";
       save(); renderSide(); tally(); published[T.id]=null; maybePublish(T.id); return;
     }
+    disarmDelete();
+    if(act==="plus2") s.p = (s.p===2000) ? 0 : 2000;
+    else if(act==="dnf") s.p = (s.p===-1) ? 0 : -1;
     var v=eff(s);
     timerEl.textContent = isFinite(v) ? fmt(v) : "DNF";
     timerEl.classList.toggle("dnf", !isFinite(v));
@@ -930,15 +1006,18 @@ import * as LB from "./leaderboard.js";
     }
     $("s-pbwhen").textContent = when || (list.length ? "" : "no times yet");
 
-    function rowsHtml(arr, offset){
+    function rowsHtml(arr, offset, baseIdx){
       var out="";
       arr.forEach(function(s,i){
-        out += '<li><span class="rk">'+(offset+i+1)+'</span>'+timeCell(s,pb)+'</li>';
+        var abs = baseIdx - i;      // the arrays are reversed for display
+        out += '<li data-i="'+abs+'"'+(abs===T.editIdx?' class="sel"':'')+'>'+
+                 '<span class="rk">'+(offset+i+1)+'</span>'+timeCell(s,pb)+
+               '</li>';
       });
       return out;
     }
     var recent=list.slice(-5).reverse();
-    $("s-last").innerHTML = recent.length ? rowsHtml(recent,0)
+    $("s-last").innerHTML = recent.length ? rowsHtml(recent, 0, list.length-1)
       : '<li><span class="rk">&mdash;</span><span class="tm" style="color:var(--muted);font-weight:400">no solves</span></li>';
 
     var rest=list.slice(0,-5).slice(-20).reverse();
@@ -946,7 +1025,7 @@ import * as LB from "./leaderboard.js";
     setShown(moreBtn, rest.length>0);
     moreBtn.textContent = T.moreOpen ? "Show less" : "Show more ("+rest.length+")";
     setShown($("s-morelist"), T.moreOpen && rest.length>0);
-    $("s-morelist").innerHTML = rowsHtml(rest,5);
+    $("s-morelist").innerHTML = rowsHtml(rest, 5, list.length-6);
 
     var sess=sessionsOf(list), cur=sess.length?sess[sess.length-1]:null;
     var cs=cur?cur.solves:[];
@@ -966,6 +1045,21 @@ import * as LB from "./leaderboard.js";
     renderLeaderboard(list, pb);
   }
   $("s-more").addEventListener("click", function(){ T.moreOpen=!T.moreOpen; renderSide(); });
+  /* Tapping any listed time aims +2 / DNF / Delete at that solve, so a mistake can
+     still be fixed after the moment has passed. */
+  function pickSolve(e){
+    var li = e.target.closest("li[data-i]");
+    if(!li) return;
+    var idx = parseInt(li.getAttribute("data-i"), 10);
+    if(!listOf(T.id)[idx]) return;
+    T.editIdx = idx;
+    disarmDelete();
+    syncActions();
+    setShown($("t-actions"), true);
+    renderSide();
+  }
+  $("s-last").addEventListener("click", pickSolve);
+  $("s-morelist").addEventListener("click", pickSolve);
 
   function renderLeaderboard(list, pb){
     var ranked=list.filter(function(s){ return isFinite(eff(s)); })
@@ -1299,7 +1393,22 @@ import * as LB from "./leaderboard.js";
     if(!sv) return;
     if(act==="plus2") sv.p = (sv.p===2000)?0:2000;
     else if(act==="dnf") sv.p = (sv.p===-1)?0:-1;
-    else { arr.splice(idx,1); if(statId===T.id) T.lastIdx=-1; }
+    else {
+      if(b.getAttribute("data-armed") !== "1"){
+        b.setAttribute("data-armed","1");
+        b.classList.add("danger-armed");
+        b.textContent = "Sure?";
+        setTimeout(function(){
+          if(!b.parentNode) return;
+          b.removeAttribute("data-armed");
+          b.classList.remove("danger-armed");
+          b.innerHTML = "&#10005;";
+        }, 3500);
+        return;
+      }
+      arr.splice(idx,1);
+      if(statId===T.id) T.editIdx=-1;
+    }
     save(); renderStats(); tally(); published[statId]=null; maybePublish(statId);
   });
 
@@ -1363,7 +1472,7 @@ import * as LB from "./leaderboard.js";
       return;
     }
     store.solves[statId]=[];
-    T.lastIdx=-1;
+    T.editIdx=-1;
     save(); renderStats(); renderHome(); tally();
     tell("Cleared.");
   });
@@ -1521,13 +1630,27 @@ import * as LB from "./leaderboard.js";
   });
 
   /* ============ boot ============ */
+  var SEEN_KEY = "cubeclock.seen";
+  $("tut-go").addEventListener("click", function(){
+    setShown($("tut"), false);
+    try{ localStorage.setItem(SEEN_KEY, "1"); }catch(err){ /* blocked storage */ }
+  });
+  function maybeTutorial(){
+    var seen = false;
+    try{ seen = localStorage.getItem(SEEN_KEY) === "1"; }catch(err){ seen = false; }
+    if(!seen) setShown($("tut"), true);
+  }
+
   function start(){
     load();
     syncInspectBtn();
     syncScrambleBtn();
+    syncViewBtn();
+    syncThemeColor();
     renderHome();
     show("home");
     renderLbBar();
+    maybeTutorial();
 
     LB.onChange(function(s){
       var wasLive = LBS.status === "live";

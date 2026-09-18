@@ -33,6 +33,20 @@
   </div>
 </header>
 
+<div class="tut v-off" id="tut" hidden role="dialog" aria-modal="true" aria-label="How to use Cube Clock">
+  <div class="tut-card">
+    <h2>How it works</h2>
+    <ol class="tut-steps">
+      <li><b>1</b><span>Pick your cube</span></li>
+      <li><b>2</b><span>Tap the screen when you&rsquo;re ready</span></li>
+      <li><b>3</b><span>Wait for the beeps, solve on the chime</span></li>
+      <li><b>4</b><span>Cube down, both hands on the screen to stop</span></li>
+    </ol>
+    <p class="tut-tip">Turn your phone sideways for the big timer.</p>
+    <button class="tut-go" id="tut-go">Got it</button>
+  </div>
+</div>
+
 <main id="view-home">
   <div class="wrap">
     <div class="lede">
@@ -51,7 +65,8 @@
       </form>
     </div>
     <div class="grid" id="cube-grid"></div>
-    <p class="foot">Times are stored in this browser and stay here. Back them up from Statistics.</p>
+    <p class="foot">Times are stored in this browser and stay here. Back them up from Statistics.
+      <button class="mini" id="h-scrtoggle" style="margin-left:6px">Scrambles: off</button></p>
   </div>
 </main>
 
@@ -62,7 +77,7 @@
     <div class="t-tools">
       <button class="ghost" id="t-mode">Hold to start</button>
       <button class="ghost" id="t-sound" aria-pressed="true">Sound on</button>
-      <button class="ghost" id="t-scrtoggle" aria-pressed="false">Scrambles off</button>
+      <button class="ghost" id="t-view">Landscape</button>
       <button class="ghost" id="t-newscr"><span class="lbl-lg">New scramble</span><span class="lbl-sm">Scramble</span></button>
       <button class="ghost" id="t-tosession">Session</button>
     </div>
@@ -85,21 +100,21 @@
         <i>This session</i>
         <div class="sess-grid" id="s-sess"></div>
       </div>
-      <div class="blk only-portrait">
+      <div class="blk only-vertical">
         <i>Leaderboard</i>
         <div class="lead-list" id="s-lead-list" style="flex-wrap:wrap"></div>
       </div>
-      <button class="ghost only-portrait" id="s-close" style="align-self:flex-start">Close</button>
+      <button class="ghost only-vertical" id="s-close" style="align-self:flex-start">Close</button>
     </aside>
 
     <div class="t-main">
       <div class="t-scramble num" id="t-scramble"></div>
-      <div class="rotate-tip">Turn your phone sideways for the full timer.</div>
       <div class="t-pad" id="t-pad" role="button" tabindex="0" aria-label="Start and stop the timer">
         <div class="t-time num" id="t-time">0.00</div>
         <div class="t-hint" id="t-hint"></div>
       </div>
       <div class="t-actions v-off" id="t-actions" hidden>
+        <span class="t-act-label" id="t-act-label"></span>
         <button data-act="plus2">+2</button>
         <button data-act="dnf">DNF</button>
         <button data-act="del">Delete</button>
@@ -111,6 +126,17 @@
     </div>
   </div>
 
+  <div class="rotate-gate">
+    <div class="rg-inner">
+      <svg viewBox="0 0 24 24" width="46" height="46" aria-hidden="true">
+        <rect x="7" y="2" width="10" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M3.5 17.5a9 9 0 0 0 3 3.2M20.5 6.5a9 9 0 0 0-3-3.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <b>Turn your phone sideways</b>
+      <p>The timer is built for landscape.</p>
+      <button class="ghost" id="rg-vertical">Use vertical instead</button>
+    </div>
+  </div>
   <div class="pb-burst v-off" id="pb-burst" hidden aria-live="polite">
     <b>New personal best!</b>
     <span class="num" id="pb-burst-time"></span>
