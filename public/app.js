@@ -1244,6 +1244,7 @@ import * as LB from "./leaderboard.js";
     $("stat-pills").innerHTML=pillsHtml(statId);
     renderStats();
   });
+  $("nav-home").addEventListener("click", function(){ renderHome(); show("home"); });
   $("nav-stats").addEventListener("click", function(){ openStats(statId); });
   $("stat-solve").addEventListener("click", function(){ openTimer(statId); });
 
