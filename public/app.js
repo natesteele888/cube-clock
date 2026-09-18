@@ -621,8 +621,57 @@ import * as LB from "./leaderboard.js";
               '</button>';
     });
     $("cube-grid").innerHTML=html;
+    renderTopTimes();
     tally();
   }
+  /* A swipeable summary of his best times, cube art alongside. Only puzzles he
+     has actually solved appear, so it stays a reward rather than a list of gaps. */
+  function renderTopTimes(){
+    var withTimes = PUZZLES.filter(function(p){ return bestSingle(listOf(p.id)) !== null; });
+    setShown($("toptimes"), withTimes.length > 0);
+    if(!withTimes.length){ $("tt-track").innerHTML = ""; $("tt-dots").innerHTML = ""; return; }
+
+    var cards = "", dots = "";
+    withTimes.forEach(function(p, i){
+      var ranked = listOf(p.id)
+        .filter(function(x){ return isFinite(eff(x)); })
+        .slice().sort(function(a,b){ return eff(a)-eff(b); })
+        .slice(0, 4);
+      var rows = ranked.map(function(sv, k){
+        return '<div class="tt-row'+(k===0?" gold":"")+'">'+
+                 '<span class="rk">'+(k+1)+'</span>'+
+                 '<span class="tm">'+fmt(eff(sv))+'</span>'+
+               '</div>';
+      }).join("");
+      cards += '<button class="tt-card" data-go="'+p.id+'">'+
+                 '<span class="tt-art">'+artFor(p)+'</span>'+
+                 '<span class="tt-body">'+
+                   '<span class="tt-name">'+p.name+'</span>'+
+                   '<span class="tt-list">'+(rows || '<span class="tt-none">no times</span>')+'</span>'+
+                 '</span>'+
+               '</button>';
+      dots += '<span class="tt-dot'+(i===0?" on":"")+'"></span>';
+    });
+    $("tt-track").innerHTML = cards;
+    $("tt-dots").innerHTML = dots;
+  }
+  /* Keep the dots in step with however far the track has been swiped. */
+  var ttScrollTimer = 0;
+  $("tt-track").addEventListener("scroll", function(){
+    clearTimeout(ttScrollTimer);
+    ttScrollTimer = setTimeout(function(){
+      var track = $("tt-track"), cards = track.children, dots = $("tt-dots").children;
+      if(!cards.length || !dots.length) return;
+      var step = cards[0].getBoundingClientRect().width + 12;
+      var at = Math.round(track.scrollLeft / step);
+      for(var i = 0; i < dots.length; i++) dots[i].classList.toggle("on", i === at);
+    }, 60);
+  }, { passive: true });
+  $("tt-track").addEventListener("click", function(e){
+    var b = e.target.closest("[data-go]");
+    if(b) openTimer(b.getAttribute("data-go"));
+  });
+
   $("cube-grid").addEventListener("click", function(e){
     var b=e.target.closest("[data-go]");
     if(b) openTimer(b.getAttribute("data-go"));
@@ -1665,6 +1714,15 @@ import * as LB from "./leaderboard.js";
     show("home");
     renderLbBar();
     maybeTutorial();
+
+    /* Home-screen shortcuts land here with a query string. */
+    try{
+      var q = new URLSearchParams(location.search);
+      var go = q.get("go"), want = q.get("view");
+      if(go && BY_ID[go]) openTimer(go);
+      else if(want === "stats") openStats(statId);
+      else if(want === "session") openSession(sessId);
+    }catch(err){ /* no URLSearchParams: just show home */ }
 
     LB.onChange(function(s){
       var wasLive = LBS.status === "live";
