@@ -150,17 +150,15 @@ img{max-width:100%}
   #view-timer.running .t-lead,
   #view-timer.running .t-scramble{opacity:.15}
 
-  .only-portrait{display:none}
+  .only-vertical{display:none}
   .t-strip{display:none}
   .t-backdrop{display:none}
-  .rotate-tip{display:none;font-size:11px;color:var(--muted);text-align:center;padding:0 16px 6px}
 
-  @media (orientation: portrait){
-    .only-portrait{display:block}
-    .t-body{flex-direction:column}
-    /* Portrait is the secondary orientation: keep the timer, push everything else
-       into a sheet the player pulls up when they want it. */
-    .t-side{
+  /* Vertical view: chosen in the timer bar, not inferred from the device. */
+  #view-timer.view-vertical .only-vertical{display:block}
+  #view-timer.view-vertical .t-body{flex-direction:column}
+    /* Vertical keeps the timer and pushes everything else into a pull-up sheet. */
+  #view-timer.view-vertical .t-side{
       position:fixed;left:0;right:0;bottom:0;z-index:60;
       width:auto;max-width:none;min-width:0;
       max-height:78%;
@@ -174,23 +172,23 @@ img{max-width:100%}
       transition:transform .26s cubic-bezier(.2,.7,.3,1);
       overflow-y:auto;
     }
-    .t-side.open{transform:none}
-    .t-backdrop{display:block;position:fixed;inset:0;z-index:55;background:rgba(0,0,0,.34);opacity:0;pointer-events:none;transition:opacity .2s}
-    .t-backdrop.open{opacity:1;pointer-events:auto}
-    .t-lead{display:none}
-    .t-strip{
+  #view-timer.view-vertical .t-side.open{transform:none}
+  #view-timer.view-vertical .t-backdrop{display:block;position:fixed;inset:0;z-index:55;background:rgba(0,0,0,.34);opacity:0;pointer-events:none;transition:opacity .2s}
+  #view-timer.view-vertical .t-backdrop.open{opacity:1;pointer-events:auto}
+  #view-timer.view-vertical .t-lead{display:none}
+  #view-timer.view-vertical .t-strip{
       display:flex;align-items:center;justify-content:space-between;gap:12px;
       flex:none;margin:0 12px calc(12px + env(safe-area-inset-bottom,0px));
       padding:12px 16px;min-height:52px;
       border:1px solid var(--line);border-radius:14px;background:var(--surface);
     }
-    .ts-main{font-family:var(--font-num);font-size:13.5px;font-weight:700;letter-spacing:-.01em;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .ts-main span{color:var(--muted);font-weight:400}
-    .ts-cue{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700;white-space:nowrap}
-    .t-main{order:1;min-height:0;flex:1 1 auto}
-    .rotate-tip{display:block}
-    .more-list{max-height:200px}
-  }
+  #view-timer.view-vertical .ts-main{font-family:var(--font-num);font-size:13.5px;font-weight:700;letter-spacing:-.01em;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #view-timer.view-vertical .ts-main span{color:var(--muted);font-weight:400}
+  #view-timer.view-vertical .ts-cue{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700;white-space:nowrap}
+  #view-timer.view-vertical .t-main{order:1;min-height:0;flex:1 1 auto}
+
+  #view-timer.view-vertical .more-list{max-height:200px}
+
   /* very short landscape (a phone on its side): tighten the vertical rhythm */
   @media (orientation: landscape) and (max-height:460px){
     .t-scramble{padding-top:8px;font-size:12px;line-height:1.5;max-height:calc(1.5em * 3)}
@@ -323,3 +321,65 @@ tr.gold td.medal{color:var(--pb)}
   position:fixed;inset:0;z-index:65;background:transparent;
   touch-action:none;-webkit-tap-highlight-color:transparent;cursor:pointer;
 }
+
+/* ---------- which solve the penalty buttons act on ---------- */
+.t-act-label{
+  align-self:center;font-family:var(--font-num);font-size:12px;
+  color:var(--muted);margin-right:4px;white-space:nowrap;
+}
+.rows li[data-i]{cursor:pointer;border-radius:7px;padding-inline:6px;margin-inline:-6px}
+.rows li[data-i]:hover{background:var(--surface)}
+.rows li.sel{background:var(--accent-soft, var(--surface));box-shadow:inset 0 0 0 1px var(--accent)}
+
+/* ---------- first-run tutorial ---------- */
+.tut{
+  position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;
+  padding:20px;background:rgba(10,12,16,.55);backdrop-filter:blur(3px);
+}
+.tut-card{
+  background:var(--bg);color:var(--ink);border-radius:20px;
+  padding:26px 24px 22px;max-width:380px;width:100%;
+  box-shadow:0 24px 60px -18px rgba(0,0,0,.5);
+  max-height:88%;overflow-y:auto;
+}
+.tut-card h2{margin:0 0 16px;font-size:22px;font-weight:800;letter-spacing:-.025em}
+.tut-steps{display:flex;flex-direction:column;gap:13px;margin:0 0 18px}
+.tut-steps li{display:flex;align-items:flex-start;gap:12px;font-size:15.5px;line-height:1.35}
+.tut-steps b{
+  flex:none;width:26px;height:26px;border-radius:50%;
+  background:var(--ink);color:var(--bg);
+  font-family:var(--font-num);font-size:13px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
+.tut-tip{margin:0 0 18px;font-size:13px;color:var(--muted)}
+.tut-go{
+  width:100%;min-height:48px;border-radius:12px;
+  background:var(--ink);color:var(--bg);font-size:16px;font-weight:700;
+}
+.tut-go:hover{opacity:.9}
+
+
+/* a delete that has been asked once and is waiting for confirmation */
+.danger-armed{
+  border-color:var(--bad) !important;
+  color:var(--bad) !important;
+  background:color-mix(in srgb, var(--bad) 12%, var(--bg)) !important;
+  font-weight:700 !important;
+}
+
+/* Landscape view on an upright phone would squeeze the timer into a third of the
+   screen, so ask for a rotate instead of rendering something cramped. The top bar
+   stays reachable so the view can be changed without rotating. */
+.rotate-gate{display:none}
+@media (orientation: portrait) and (max-width: 760px){
+  #view-timer:not(.view-vertical) .rotate-gate{
+    display:flex;align-items:center;justify-content:center;
+    position:absolute;left:0;right:0;bottom:0;
+    top:calc(env(safe-area-inset-top, 0px) + 54px);
+    z-index:58;background:var(--bg);padding:24px;
+  }
+}
+.rg-inner{text-align:center;max-width:280px;color:var(--ink-2)}
+.rg-inner svg{color:var(--muted);margin-bottom:14px}
+.rg-inner b{display:block;font-size:18px;font-weight:800;letter-spacing:-.02em;color:var(--ink);margin-bottom:6px}
+.rg-inner p{margin:0 0 18px;font-size:13.5px;color:var(--muted)}
