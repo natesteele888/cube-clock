@@ -247,7 +247,7 @@ import * as LB from "./leaderboard.js";
 
   /* ============ storage ============ */
   var KEY="cubeclock.v1";
-  var store={ solves:{}, opts:{ inspect:false } };
+  var store={ solves:{}, opts:{ inspect:false, scramble:false } };
   function load(){
     try{
       var raw=localStorage.getItem(KEY);
@@ -256,6 +256,7 @@ import * as LB from "./leaderboard.js";
       if(d && d.solves && typeof d.solves==="object") store.solves=d.solves;
       if(d && d.opts && typeof d.opts==="object"){
         store.opts.inspect = !!d.opts.inspect;
+        store.opts.scramble = !!d.opts.scramble;
       }
     }catch(err){ /* private window or blocked storage: run from memory */ }
   }
@@ -437,6 +438,7 @@ import * as LB from "./leaderboard.js";
     $("t-name").textContent=p.name;
     $("t-sw").style.background=p.accent;
     newScramble();
+    syncScrambleBtn();
     resetFace();
     show("timer");
     sharedRows = [];
@@ -447,9 +449,26 @@ import * as LB from "./leaderboard.js";
     });
   }
   function newScramble(){
+    // Always generated and stored with the solve, so turning the display back on
+    // later does not leave a gap in the history.
     T.scramble=scrambleFor(BY_ID[T.id]);
     $("t-scramble").textContent=T.scramble;
   }
+  function syncScrambleBtn(){
+    var on=!!store.opts.scramble, b=$("t-scrtoggle");
+    b.setAttribute("aria-pressed", String(on));
+    // On a phone the pressed styling carries the state, so the label can be short.
+    b.textContent = window.matchMedia("(max-width:600px)").matches
+      ? "Scramble" : (on ? "Scrambles on" : "Scrambles off");
+    setShown($("t-scramble"), on);
+    setShown($("t-newscr"), on);
+  }
+  $("t-scrtoggle").addEventListener("click", function(){
+    store.opts.scramble=!store.opts.scramble;
+    save();
+    syncScrambleBtn();
+    if(current==="stats") renderStats();
+  });
   function resetFace(){
     setSheet(false);
     T.phase="idle"; T.pending=0; T.inspStart=0;
@@ -601,7 +620,7 @@ import * as LB from "./leaderboard.js";
     b.textContent = store.opts.inspect ? (narrow ? "15s" : "Inspection 15s")
                                        : (narrow ? "Insp off" : "Inspection off");
   }
-  window.addEventListener("orientationchange", function(){ setTimeout(syncInspectBtn, 120); });
+  window.addEventListener("orientationchange", function(){ setTimeout(function(){ syncInspectBtn(); syncScrambleBtn(); }, 120); });
 
   function syncActions(){
     var s=listOf(T.id)[T.lastIdx], btns=$("t-actions").querySelectorAll("button");
@@ -967,7 +986,7 @@ import * as LB from "./leaderboard.js";
   var rzTimer=0;
   window.addEventListener("resize", function(){
     clearTimeout(rzTimer);
-    rzTimer=setTimeout(function(){ syncInspectBtn(); if(current==="stats") drawChart(listOf(statId)); }, 140);
+    rzTimer=setTimeout(function(){ syncInspectBtn(); syncScrambleBtn(); if(current==="stats") drawChart(listOf(statId)); }, 140);
   });
 
   function renderHistory(list){
@@ -989,7 +1008,7 @@ import * as LB from "./leaderboard.js";
         '<td class="num" style="color:var(--muted)">'+(i+1)+'</td>'+
         '<td class="'+cls+'">'+(isFinite(v)?fmt(v)+(s.p===2000?" (+2)":""):"DNF")+'</td>'+
         '<td class="num" style="color:var(--ink-2)">'+(a5===null?"&mdash;":fmt(a5))+'</td>'+
-        '<td class="sc">'+String(s.s||"").replace(/\n/g," / ")+'</td>'+
+        (store.opts.scramble ? '<td class="sc">'+String(s.s||"").replace(/\n/g," / ")+'</td>' : "")+
         '<td class="num" style="color:var(--muted);font-size:11.5px">'+fullDate(s.d)+'</td>'+
         '<td class="act">'+
           '<button class="mini" data-h="plus2" data-i="'+i+'">+2</button>'+
@@ -998,7 +1017,7 @@ import * as LB from "./leaderboard.js";
         '</td></tr>';
     }
     $("hist-wrap").innerHTML='<div class="tbl-scroll"><table><thead><tr>'+
-      '<th>#</th><th>Time</th><th>Ao5</th><th>Scramble</th><th>When</th><th></th>'+
+      '<th>#</th><th>Time</th><th>Ao5</th>'+(store.opts.scramble?'<th>Scramble</th>':'')+'<th>When</th><th></th>'+
       '</tr></thead><tbody>'+rows+'</tbody></table></div>'+
       (shown<list.length?'<p style="margin:12px 0 0"><button class="ghost" id="hist-more">Show all '+list.length+' solves</button></p>':"");
     var more=$("hist-more");
@@ -1237,6 +1256,7 @@ import * as LB from "./leaderboard.js";
   function start(){
     load();
     syncInspectBtn();
+    syncScrambleBtn();
     renderHome();
     show("home");
     renderLbBar();

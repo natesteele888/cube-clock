@@ -118,7 +118,7 @@ img{max-width:100%}
   .sess-grid div{font-family:var(--font-num);font-size:13px;font-weight:600}
   .sess-grid span{display:block;font-family:var(--font-ui);font-size:9.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700}
 
-  .t-scramble{font-family:var(--font-num);font-size:clamp(12px,1.55vw,16px);line-height:1.7;color:var(--ink-2);text-align:center;padding:14px 20px 0;white-space:pre-line;flex:none;max-height:23vh;overflow-y:auto;transition:opacity .2s}
+  .t-scramble{font-family:var(--font-num);font-size:clamp(12px,1.55vw,16px);line-height:1.7;color:var(--ink-2);text-align:center;padding:14px 20px 0;white-space:pre-line;flex:none;box-sizing:content-box;max-height:calc(1.7em * 7);overflow-y:auto;overscroll-behavior:contain;transition:opacity .2s}
   .t-pad{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:none;overflow:hidden}
   .t-time{font-family:var(--font-num);font-weight:700;font-size:clamp(54px,11.5vw,150px);line-height:.92;letter-spacing:-.05em;font-variant-numeric:tabular-nums;white-space:nowrap;max-width:100%}
   .armed .t-time{color:var(--go)}
@@ -193,7 +193,7 @@ img{max-width:100%}
   }
   /* very short landscape (a phone on its side): tighten the vertical rhythm */
   @media (orientation: landscape) and (max-height:460px){
-    .t-scramble{padding-top:8px;font-size:12px;line-height:1.5;max-height:26%}
+    .t-scramble{padding-top:8px;font-size:12px;line-height:1.5;max-height:calc(1.5em * 3)}
     .t-side{padding:10px 12px;gap:12px}
     .t-lead{padding-top:7px;padding-bottom:calc(7px + env(safe-area-inset-bottom,0px))}
     .t-actions{padding-bottom:8px}
