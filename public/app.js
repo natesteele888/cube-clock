@@ -710,6 +710,7 @@ import * as LB from "./leaderboard.js";
     syncScrambleBtn();
     resetFace();
     show("timer");
+    syncViewBtn();          // re-assert the orientation lock for this session
     maybeTimerTutorial();
     sharedRows = [];
     stopWatch("timer");
@@ -755,8 +756,10 @@ import * as LB from "./leaderboard.js";
     $("t-view").setAttribute("aria-pressed", String(vertical));
     lockLandscape();
   }
-  /* An installed app can be pinned sideways; a browser tab cannot, and refusing
-     is normal rather than an error. */
+  /* An installed app can pin itself sideways; a browser tab cannot (it needs
+     fullscreen), and refusing is normal rather than an error -- the rotate
+     prompt covers that case. The lock lives here rather than in the manifest so
+     that choosing Vertical can genuinely release it. */
   function lockLandscape(){
     try{
       if(!screen.orientation) return;
