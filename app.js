@@ -1167,11 +1167,11 @@ import * as LB from "./leaderboard.js";
   function renderLbBar(){
     var dot = $("lb-dot"), txt = $("lb-text"), edit = $("lb-edit");
     dot.className = "lb-dot" + (LBS.status === "live" ? " live" : (LBS.status === "error" ? " err" : ""));
-    if(LBS.status === "off"){
-      txt.innerHTML = "Leaderboard is off &mdash; your times stay on this device.";
-      edit.hidden = true; edit.classList.add("v-off");
-      return;
-    }
+    var bar = $("lb-bar"), nav = $("nav-leaders");
+    var localOnly = (LBS.status === "off");
+    bar.hidden = localOnly; bar.classList.toggle("v-off", localOnly);
+    nav.hidden = localOnly; nav.classList.toggle("v-off", localOnly);
+    if(localOnly) return;
     edit.hidden = false; edit.classList.remove("v-off");
     if(LBS.status === "error"){
       txt.innerHTML = esc(LBS.message || "Leaderboard unavailable.");
