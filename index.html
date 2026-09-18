@@ -48,6 +48,20 @@
   </div>
 </div>
 
+<div class="tut v-off" id="tut2" hidden role="dialog" aria-modal="true" aria-label="Timer options">
+  <div class="tut-card">
+    <h2>Your options</h2>
+    <ol class="tut-steps">
+      <li><b>1</b><span>Tap anywhere to start the countdown</span></li>
+      <li><b>2</b><span><i>3s</i> changes the countdown, or switches to inspection</span></li>
+      <li><b>3</b><span><i>Sound</i> turns the beeps and cheers off</span></li>
+      <li><b>4</b><span>Tap any time on the left to fix or delete it</span></li>
+    </ol>
+    <p class="tut-tip">Your best time and last 5 stay on the left.</p>
+    <button class="tut-go" id="tut2-go">Got it</button>
+  </div>
+</div>
+
 <main id="view-home">
   <div class="wrap">
     <div class="lede">
@@ -158,7 +172,7 @@
       <span class="note" id="sess-sub"></span>
       <span style="margin-left:auto;display:flex;gap:8px">
         <button class="ghost" id="sess-new">Start a new session</button>
-        <button class="ghost" id="sess-solve">Time a solve</button>
+        <button class="ghost cta" id="sess-solve">Time a solve</button>
       </span>
     </div>
     <div id="sess-current"></div>
@@ -174,7 +188,7 @@
     <div class="sec-head">
       <h2 id="lead-title"></h2>
       <span class="note" id="lead-sub"></span>
-      <button class="ghost" style="margin-left:auto" id="lead-solve">Time a solve</button>
+      <button class="ghost cta" style="margin-left:auto" id="lead-solve">Time a solve</button>
     </div>
     <div id="lead-wrap"></div>
     <p class="foot" id="lead-foot"></p>
@@ -187,7 +201,7 @@
     <div class="sec-head">
       <h2 id="stat-title"></h2>
       <span class="note" id="stat-sub"></span>
-      <button class="ghost" style="margin-left:auto" id="stat-solve">Time a solve</button>
+      <button class="ghost cta" style="margin-left:auto" id="stat-solve">Time a solve</button>
     </div>
     <div class="tiles" id="stat-tiles"></div>
     <div class="sec-head"><h2>Trend</h2><span class="note">Every single, with a rolling average of 5 laid over it.</span></div>
