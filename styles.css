@@ -419,3 +419,7 @@ tr.gold td.medal{color:var(--pb)}
   .tut-tip{margin-bottom:12px;font-size:12px}
   .tut-go{min-height:42px;font-size:15px}
 }
+
+/* the wordmark is the way home */
+.brand{padding:0;cursor:pointer;text-align:left}
+.brand:hover b{opacity:.7}
