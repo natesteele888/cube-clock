@@ -1753,10 +1753,15 @@ import * as LB from "./leaderboard.js";
      signal. A new version activates immediately, but the page only reloads
      itself when nothing is in progress -- never mid-solve. */
   if("serviceWorker" in navigator){
+    /* On the very first visit the worker takes control of a page that is already
+       correct, so reloading there is a pointless flash. Only an UPDATE -- a
+       controller replacing an earlier one -- is worth refreshing for. */
+    var hadController = !!navigator.serviceWorker.controller;
     var reloading = false;
     navigator.serviceWorker.register("sw.js").catch(function(){ /* unsupported or blocked */ });
     navigator.serviceWorker.addEventListener("controllerchange", function(){
-      if(reloading || T.phase !== "idle") return;        // a solve is running: catch it next launch
+      if(!hadController) return;                         // first install, nothing to refresh
+      if(reloading || T.phase !== "idle") return;        // mid-solve: catch it next launch
       reloading = true;
       location.reload();
     });
