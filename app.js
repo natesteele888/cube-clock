@@ -194,10 +194,17 @@ import * as LB from "./leaderboard.js";
     return s+"</svg>";
   }
 
+  /* The artwork never changes, so the geometry runs once per puzzle instead of
+     on every render. The megaminx in particular rebuilds and sorts a whole
+     dodecahedron each time it is asked for. */
+  var artCache = {};
   function artFor(p){
-    if(p.kind === "cube") return cubeSVG(p.n, p.faces);
-    if(p.kind === "pyra") return pyraSVG(p.faces);
-    return megaSVG();
+    if(artCache[p.id]) return artCache[p.id];
+    var svg = p.kind === "cube" ? cubeSVG(p.n, p.faces)
+            : p.kind === "pyra" ? pyraSVG(p.faces)
+            : megaSVG();
+    artCache[p.id] = svg;
+    return svg;
   }
 
   /* ============ scrambles ============ */
@@ -551,6 +558,12 @@ import * as LB from "./leaderboard.js";
     current=name;
     Object.keys(views).forEach(function(k){ setShown(views[k], k===name); });
     document.body.classList.toggle("is-timing", name==="timer");
+    var shown = views[name];
+    if(shown && name !== "timer"){
+      shown.classList.remove("view-in");
+      void shown.offsetWidth;        // restart the animation
+      shown.classList.add("view-in");
+    }
     setShown($("topbar"), name!=="timer");
     if(name!=="timer") window.scrollTo(0,0);
     if(name==="timer") keepAwake(true); else keepAwake(false);
@@ -608,26 +621,47 @@ import * as LB from "./leaderboard.js";
   else if(darkMq.addListener) darkMq.addListener(syncThemeColor);
 
   /* ============ home ============ */
+  function bestLine(p){
+    var list = listOf(p.id), pb = bestSingle(list);
+    return pb === null ? "No times yet" : "Best <b>" + fmt(pb) + "</b> &middot; " + list.length;
+  }
+  var gridBuilt = false;
   function renderHome(){
-    var html="";
-    PUZZLES.forEach(function(p){
-      var list=listOf(p.id), pb=bestSingle(list);
-      html += '<button class="tile" data-go="'+p.id+'">'+
-                '<span class="tile-art">'+artFor(p)+'</span>'+
-                '<span class="tile-name">'+p.name+'</span>'+
-                '<span class="tile-best">'+
-                  (pb===null ? "No times yet" : "Best <b>"+fmt(pb)+"</b> &middot; "+list.length)+
-                '</span>'+
-              '</button>';
-    });
-    $("cube-grid").innerHTML=html;
+    if(!gridBuilt){
+      var html = "";
+      PUZZLES.forEach(function(p){
+        html += '<button class="tile" data-go="'+p.id+'">'+
+                  '<span class="tile-art">'+artFor(p)+'</span>'+
+                  '<span class="tile-name">'+p.name+'</span>'+
+                  '<span class="tile-best">'+bestLine(p)+'</span>'+
+                '</button>';
+      });
+      $("cube-grid").innerHTML = html;
+      gridBuilt = true;
+    } else {
+      /* Re-parsing 40kB of identical SVG to change one line of text is the kind
+         of thing a phone notices. Only the text is rewritten. */
+      var cells = $("cube-grid").querySelectorAll(".tile-best");
+      PUZZLES.forEach(function(p, i){
+        if(cells[i]) cells[i].innerHTML = bestLine(p);
+      });
+    }
     renderTopTimes();
     tally();
   }
   /* A swipeable summary of his best times, cube art alongside. Only puzzles he
      has actually solved appear, so it stays a reward rather than a list of gaps. */
+  var ttSig = null;
   function renderTopTimes(){
     var withTimes = PUZZLES.filter(function(p){ return bestSingle(listOf(p.id)) !== null; });
+    /* Cheap fingerprint of exactly what the slider shows; identical means there
+       is nothing to redraw. */
+    var sig = withTimes.map(function(p){
+      return p.id + ":" + listOf(p.id).filter(function(x){ return isFinite(eff(x)); })
+        .map(eff).sort(function(a,b){ return a-b; }).slice(0,4).join(",");
+    }).join("|");
+    if(sig === ttSig) return;
+    ttSig = sig;
     setShown($("toptimes"), withTimes.length > 0);
     if(!withTimes.length){ $("tt-track").innerHTML = ""; $("tt-dots").innerHTML = ""; return; }
 
@@ -940,7 +974,9 @@ import * as LB from "./leaderboard.js";
     setShown($("t-actions"), true);
     newScramble();
     paint();
+    T.flash = true;
     renderSide();
+    T.flash = false;
     tally();
     maybePublish(T.id);
   }
@@ -1071,9 +1107,15 @@ import * as LB from "./leaderboard.js";
       return out;
     }
     var recent=list.slice(-5).reverse();
+    if(T.flash) $("s-last").classList.add("flash-next");
     $("s-last").innerHTML = recent.length ? rowsHtml(recent, 0, list.length-1)
       : '<li><span class="rk">&mdash;</span><span class="tm" style="color:var(--muted);font-weight:400">no solves</span></li>';
 
+    if(T.flash){
+      $("s-last").classList.remove("flash-next");
+      var first = $("s-last").firstElementChild;
+      if(first) first.classList.add("fresh");
+    }
     var rest=list.slice(0,-5).slice(-20).reverse();
     var moreBtn=$("s-more");
     setShown(moreBtn, rest.length>0);
@@ -1705,6 +1747,19 @@ import * as LB from "./leaderboard.js";
     var seen = false;
     try{ seen = localStorage.getItem(SEEN_KEY) === "1"; }catch(err){ seen = false; }
     if(!seen) setShown($("tut"), true);
+  }
+
+  /* Registering the worker is what makes the app open instantly and work with no
+     signal. A new version activates immediately, but the page only reloads
+     itself when nothing is in progress -- never mid-solve. */
+  if("serviceWorker" in navigator){
+    var reloading = false;
+    navigator.serviceWorker.register("sw.js").catch(function(){ /* unsupported or blocked */ });
+    navigator.serviceWorker.addEventListener("controllerchange", function(){
+      if(reloading || T.phase !== "idle") return;        // a solve is running: catch it next launch
+      reloading = true;
+      location.reload();
+    });
   }
 
   function start(){
