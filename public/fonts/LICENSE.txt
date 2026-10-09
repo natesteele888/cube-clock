@@ -1,0 +1,8 @@
+Archivo and Azeret Mono are both licensed under the SIL Open Font License 1.1,
+which permits self-hosting and redistribution.
+
+  Archivo      - Omnibus-Type       https://fonts.google.com/specimen/Archivo
+  Azeret Mono  - Displaay Type      https://fonts.google.com/specimen/Azeret+Mono
+
+Both files here are the variable "latin" subsets served by Google Fonts; one
+file per family covers every weight the app uses.

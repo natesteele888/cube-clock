@@ -1,3 +1,21 @@
+/* Self-hosted so the first paint never waits on two cross-origin handshakes to
+   Google. Variable fonts: one file per family covers every weight. SIL OFL --
+   see fonts/LICENSE.txt. */
+@font-face{
+  font-family:'Archivo';
+  font-style:normal;
+  font-weight:400 800;
+  font-display:swap;
+  src:url(fonts/archivo-latin.woff2) format('woff2');
+}
+@font-face{
+  font-family:'Azeret Mono';
+  font-style:normal;
+  font-weight:400 700;
+  font-display:swap;
+  src:url(fonts/azeret-mono-latin.woff2) format('woff2');
+}
+
 /* Baseline the hosted page must provide itself (the Artifact host used to supply it). */
 *,*::before,*::after{box-sizing:border-box}
 :root{
@@ -465,3 +483,28 @@ tr.gold td.medal{color:var(--pb)}
 }
 .brand{overflow:hidden}
 .brand b{overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- motion ---------- */
+@media (prefers-reduced-motion: no-preference){
+  /* a new time announces itself in the list rather than just appearing */
+  @keyframes freshIn{
+    0%   { background:color-mix(in srgb, var(--go) 26%, transparent); transform:translateX(-5px); }
+    100% { background:transparent; transform:none; }
+  }
+  .rows li.fresh{ animation:freshIn .55s cubic-bezier(.2,.8,.3,1); }
+
+  /* panels arrive instead of snapping in */
+  @keyframes viewIn{
+    from { opacity:0; transform:translateY(5px); }
+    to   { opacity:1; transform:none; }
+  }
+  .view-in{ animation:viewIn .17s ease-out; }
+
+  /* the press should be felt immediately, before anything loads */
+  .tile{ transition:transform .14s cubic-bezier(.2,.8,.3,1), box-shadow .14s; }
+  .tile:active{ transform:scale(.975); }
+  .tt-card{ transition:transform .14s cubic-bezier(.2,.8,.3,1); }
+  .tt-card:active{ transform:scale(.98); }
+  .ghost,.mini{ transition:transform .12s ease, border-color .15s, color .15s, background .15s; }
+  .ghost:active,.mini:active{ transform:scale(.96); }
+}
