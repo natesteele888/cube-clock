@@ -82,9 +82,20 @@ export async function init() {
       });
       A.signInAnonymously(auth).catch((err) => {
         lb.status = "error";
-        lb.message = err && err.code === "auth/admin-restricted-operation"
-          ? "Turn on Anonymous sign-in in the Firebase console (Authentication → Sign-in method)."
-          : "Could not reach the leaderboard.";
+        const code = err && err.code;
+        /* Each half-finished setup has a precise fix, so name it rather than
+           showing a shrug. */
+        if (code === "auth/configuration-not-found") {
+          lb.message = "Firebase Authentication is not switched on yet " +
+                       "(console → Authentication → Get started → Anonymous).";
+        } else if (code === "auth/admin-restricted-operation") {
+          lb.message = "Turn on Anonymous sign-in in the Firebase console " +
+                       "(Authentication → Sign-in method → Anonymous).";
+        } else if (code === "auth/network-request-failed") {
+          lb.message = "No connection — your times are still saved on this device.";
+        } else {
+          lb.message = "Could not reach the leaderboard.";
+        }
         emit();
         resolve();
       });
