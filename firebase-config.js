@@ -1,22 +1,17 @@
 // ---------------------------------------------------------------------------
-// Paste your Firebase web-app config here. SETUP.md walks through getting it.
-//
-// These values are NOT secrets. A Firebase web config is meant to ship in the
-// browser; what protects your data is firestore.rules, not hiding this object.
-//
-// Until you fill this in, the app still runs perfectly as a local timer --
-// the leaderboard simply reports itself as offline.
+// Firebase config for Cube Clock. These values are NOT secrets -- a Firebase web
+// config is designed to ship in the browser. What protects the data is
+// firestore.rules, not hiding this file.
 // ---------------------------------------------------------------------------
 
 export const firebaseConfig = {
-  apiKey: "PASTE_API_KEY",
-  authDomain: "PASTE_PROJECT.firebaseapp.com",
-  projectId: "PASTE_PROJECT",
-  storageBucket: "PASTE_PROJECT.firebasestorage.app",
-  messagingSenderId: "PASTE_SENDER_ID",
-  appId: "PASTE_APP_ID"
+  apiKey: "AIzaSyBd8KganSzt1OqXOevEm98dMXyOt-X39HQ",
+  authDomain: "cube-clock-49011.firebaseapp.com",
+  projectId: "cube-clock-49011",
+  storageBucket: "cube-clock-49011.firebasestorage.app",
+  messagingSenderId: "310432977569",
+  appId: "1:310432977569:web:c476581c074e3d7b1416e0"
 };
 
-// Flipped to false automatically when the config above is still the placeholder.
 export const configured = !Object.values(firebaseConfig)
-  .some(v => typeof v === "string" && v.startsWith("PASTE_"));
+  .some(v => typeof v === "string" && (v.startsWith("PASTE_") || v === ""));
