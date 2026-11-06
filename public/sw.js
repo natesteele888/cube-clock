@@ -8,7 +8,7 @@
  * Only same-origin GETs are touched. Firebase traffic, when the leaderboard is
  * switched on, goes straight to the network.
  */
-var CACHE = "cubeclock-v7";
+var CACHE = "cubeclock-v8";
 var ASSETS = [
   "./",
   "./index.html",
@@ -38,7 +38,8 @@ self.addEventListener("activate", function(e){
   e.waitUntil(
     caches.keys().then(function(keys){
       return Promise.all(keys.map(function(k){
-        return k === CACHE ? null : caches.delete(k);
+        // Only our own old versions: every github.io app shares this storage.
+        return (k.indexOf("cubeclock-") === 0 && k !== CACHE) ? caches.delete(k) : null;
       }));
     }).then(function(){ return self.clients.claim(); })
   );
