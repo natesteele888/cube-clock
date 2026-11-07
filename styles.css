@@ -376,6 +376,20 @@ tr.gold td.medal{color:var(--pb)}
 }
 .tut-go:hover{opacity:.9}
 
+/* On a phone, a bottom sheet reads better than a floating centered card. */
+@media (max-width:640px){
+  .tut{align-items:flex-end;padding:0}
+  .tut-card{
+    max-width:none;border-radius:20px 20px 0 0;
+    padding:22px 20px calc(18px + env(safe-area-inset-bottom,0px));
+    max-height:85vh;box-shadow:0 -12px 40px rgba(0,0,0,.35);
+  }
+}
+@media (max-width:640px) and (prefers-reduced-motion:no-preference){
+  .tut-card{animation:tutSlideUp .22s ease-out}
+}
+@keyframes tutSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
 
 /* a delete that has been asked once and is waiting for confirmation */
 .danger-armed{
