@@ -129,7 +129,7 @@ img{max-width:100%}
   .rows .tm.pen{color:var(--warn)}
   .rows .tm.best{color:var(--pb)}
   .more-list{max-height:210px;overflow-y:auto;margin-top:6px}
-  .mini{font-size:11px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:7px;padding:5px 11px;min-height:30px}
+  .mini{font-size:11px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:7px;padding:5px 11px;min-height:36px}
   .mini:hover{color:var(--ink);border-color:var(--ink-2)}
   .mini.danger:hover{color:var(--bad);border-color:var(--bad)}
   .sess-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
@@ -439,7 +439,7 @@ tr.gold td.medal{color:var(--pb)}
 }
 
 /* the wordmark is the way home */
-.brand{padding:0;cursor:pointer;text-align:left}
+.brand{padding:0;cursor:pointer;text-align:left;min-height:40px}
 .brand:hover b{opacity:.7}
 
 /* ---------- top times slider ---------- */
