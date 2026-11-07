@@ -483,6 +483,12 @@ tr.gold td.medal{color:var(--pb)}
 }
 .brand{overflow:hidden}
 .brand b{overflow:hidden;text-overflow:ellipsis}
+/* On a phone held upright the nav leaves the wordmark one letter wide. Show
+   the cube mark alone there; the button keeps its aria-label. */
+@media (max-width: 420px){
+  .brand b{display:none}
+  .brand{min-width:40px;justify-content:center}
+}
 
 /* ---------- motion ---------- */
 @media (prefers-reduced-motion: no-preference){
