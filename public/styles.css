@@ -502,6 +502,10 @@ tr.gold td.medal{color:var(--pb)}
 @media (max-width: 420px){
   .brand b{display:none}
   .brand{min-width:40px;justify-content:center}
+  /* All three nav buttons have to fit a 320px phone; they ran off the right
+     edge up to about 370px wide, and the page slid sideways with them. */
+  .topbar-in{padding-inline:12px;gap:6px}
+  .topbar-in .ghost{padding-inline:10px}
 }
 
 /* ---------- motion ---------- */
