@@ -59,3 +59,7 @@ in full and the board reports itself as off.
 Solves never leave the device. The only thing uploaded is one row per player
 per puzzle holding their best single, best Ao5, best Ao12 and solve count —
 written only when one of those actually changes.
+
+## Tests
+
+The leaderboard security rules have emulator tests in `tests/` (Java needed): `cd tests && npm install && npm test`. They also run on every push through GitHub Actions.

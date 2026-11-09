@@ -3,6 +3,7 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
+  "emulators": { "firestore": { "port": 8080 }, "ui": { "enabled": false } },
   "hosting": {
     "public": "public",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "**/_*.part"],

@@ -1,0 +1,13 @@
+{
+  "name": "cube-clock-rules-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "cd .. && tests/node_modules/.bin/firebase emulators:exec --only firestore --project demo-cube-clock \"node --test tests/rules.test.mjs\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^6.0.0",
+    "firebase": "^13.0.0",
+    "firebase-tools": "^15.35.0"
+  }
+}
