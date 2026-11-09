@@ -5,13 +5,36 @@
   },
   "hosting": {
     "public": "public",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "**/_*.part"],
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "**/_*.part"
+    ],
     "headers": [
       {
         "source": "**/*.@(js|css)",
-        "headers": [{ "key": "Cache-Control", "value": "max-age=0, must-revalidate" }]
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=0, must-revalidate"
+          }
+        ]
       }
     ],
-    "rewrites": [{ "source": "**", "destination": "/index.html" }]
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "emulators": {
+    "firestore": {
+      "port": 8080
+    },
+    "ui": {
+      "enabled": false
+    }
   }
 }

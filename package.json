@@ -7,6 +7,7 @@
     "dev": "python3 -m http.server 8742 --directory public",
     "deploy": "firebase deploy",
     "deploy:site": "firebase deploy --only hosting",
-    "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes"
+    "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",
+    "test": "cd tests && npm test"
   }
 }
