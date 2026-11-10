@@ -406,10 +406,12 @@ tr.gold td.medal{color:var(--pb)}
 @media (orientation: portrait) and (max-width: 760px){
   #view-timer:not(.view-vertical) .rotate-gate{
     display:flex;align-items:center;justify-content:center;
-    position:absolute;left:0;right:0;bottom:0;
-    top:calc(env(safe-area-inset-top, 0px) + 54px);
+    /* In the flow under the bar, not pinned 54px down: on a narrow phone the
+       bar wraps to two rows and a pinned gate covered the second one. */
+    flex:1 1 auto;min-height:0;position:relative;
     z-index:58;background:var(--bg);padding:24px;
   }
+  #view-timer:not(.view-vertical) .t-body{display:none}
 }
 .rg-inner{text-align:center;max-width:280px;color:var(--ink-2)}
 .rg-inner svg{color:var(--muted);margin-bottom:14px}
@@ -506,6 +508,11 @@ tr.gold td.medal{color:var(--pb)}
      edge up to about 370px wide, and the page slid sideways with them. */
   .topbar-in{padding-inline:12px;gap:6px}
   .topbar-in .ghost{padding-inline:10px}
+  /* Same squeeze for the timer's own bar held upright: Session ran past the
+     right edge at 390px. The tools wrap to a second row rather than hide. */
+  .t-top{padding-inline:10px;gap:6px}
+  .t-top .ghost{padding-inline:10px}
+  .t-tools{gap:6px;flex:1 1 0;min-width:0;flex-wrap:wrap;justify-content:flex-end}
 }
 
 /* ---------- motion ---------- */
