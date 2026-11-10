@@ -16,6 +16,7 @@
 <link rel="preload" href="fonts/azeret-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="manifest" href="manifest.json">
 <script src="https://natesteele888.github.io/apps/install.js" defer></script>
+<script src="https://natesteele888.github.io/apps/health.js" defer></script>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -222,6 +223,7 @@
         <button class="ghost v-off" id="b-export" hidden>Download backup file</button>
         <button class="ghost" id="b-copy">Copy all times as text</button>
         <button class="ghost" id="b-restore">Restore from text</button>
+        <button type="button" class="ghost" onclick="window.nateHealth&&nateHealth.report()">Something wrong? Send a report</button>
         <span class="say" id="b-say"></span>
       </div>
       <textarea class="v-off" id="b-box" hidden spellcheck="false" aria-label="Backup data"></textarea>
