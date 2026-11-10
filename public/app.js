@@ -271,7 +271,7 @@ import * as LB from "./leaderboard.js";
     }catch(err){ /* private window or blocked storage: run from memory */ }
   }
   function save(){
-    try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(err){ /* quota or blocked */ }
+    try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(err){ /* quota or blocked */ if(window.nateHealth) window.nateHealth.note("save", "solve times not saved"); }
   }
   function listOf(id){
     if(!store.solves[id]) store.solves[id]=[];
