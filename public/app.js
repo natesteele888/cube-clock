@@ -1316,7 +1316,7 @@ import * as LB from "./leaderboard.js";
     var nDays=Object.keys(days).length;
     var today=list.filter(function(s){ return dayKey(s.d)===dayKey(Date.now()); });
     $("stat-sub").textContent = list.length
-      ? list.length+" solves across "+nDays+" day"+(nDays===1?"":"s")+(today.length?" \u00b7 "+today.length+" today":"")
+      ? list.length+(list.length===1?" solve":" solves")+" across "+nDays+" day"+(nDays===1?"":"s")+(today.length?" \u00b7 "+today.length+" today":"")
       : "Nothing logged yet.";
     var dash="&mdash;", pbDate=null;
     if(pb!==null) for(i=0;i<list.length;i++) if(eff(list[i])===pb){ pbDate=list[i].d; break; }
@@ -1324,7 +1324,7 @@ import * as LB from "./leaderboard.js";
       statTile("Personal best", pb===null?dash:fmt(pb), pbDate?"set "+shortDate(pbDate):"", true)+
       statTile("Best Ao5", b5===null?dash:fmt(b5), cur5!==null?"now "+fmt(cur5):"needs 5 solves")+
       statTile("Best Ao12", b12===null?dash:fmt(b12), cur12!==null?"now "+fmt(cur12):"needs 12 solves")+
-      statTile("Average of all", mean===null?dash:fmt(mean), list.length+" solves")+
+      statTile("Average of all", mean===null?dash:fmt(mean), list.length+(list.length===1?" solve":" solves"))+
       statTile("Days practised", String(nDays), nDays?"first "+shortDate(list[0].d):"");
     renderChart(list);
     renderHistory(list);
