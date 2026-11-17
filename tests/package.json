@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "cd .. && tests/node_modules/.bin/firebase emulators:exec --only firestore --project demo-cube-clock \"node --test tests/rules.test.mjs\""
+    "test": "cd .. && tests/node_modules/.bin/firebase emulators:exec --only firestore --project demo-cube-clock \"node --test tests/rules.test.mjs\"",
+    "test:watch": "cd .. && node --test tests/watch.test.mjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^6.0.0",

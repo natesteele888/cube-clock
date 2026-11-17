@@ -25,6 +25,18 @@ and deploy ([SETUP.md](SETUP.md)) and it appears. Until then it stays hidden.
 - **Shared leaderboard**, live, per puzzle, with optional group codes.
   *(Off by default — see SETUP.md when you want it.)*
 - **Backup** to a file or to text you can paste somewhere safe.
+- **Your watch** *(optional)* — link a Wear OS watch from Statistics.
+
+## Your watch
+
+Solves can also be timed on a Wear OS watch. Open Cube Clock on the watch, then
+in **Statistics → Your watch** type the 8-letter code it shows. Solves timed on
+the watch join the normal history here (checked first, and never added twice),
+and the watch shows your best, Ao5, Ao12 and last five times. Until you link a
+watch nothing changes and no network call is made. The link is one private
+document keyed by a random code only the phone and the watch know
+(`watchlink.js`, a copy of the shared file in `natesteele888/apps`; keep the
+two the same). Cube Clock's part is `watch-sync.js`.
 
 ## Layout
 
@@ -34,6 +46,8 @@ public/
   styles.css          all styling, light + dark
   app.js              timer, scrambles, stats, views
   leaderboard.js      anonymous auth + Firestore
+  watchlink.js        the watch link (shared copy, keep in step with natesteele888/apps)
+  watch-sync.js       Cube Clock's watch sync: takes watch solves, sends the summary
   firebase-config.js  your project's config (you fill this in)
 firestore.rules       who may write what
 firestore.indexes.json
@@ -58,8 +72,10 @@ in full and the board reports itself as off.
 
 Solves never leave the device. The only thing uploaded is one row per player
 per puzzle holding their best single, best Ao5, best Ao12 and solve count —
-written only when one of those actually changes.
+written only when one of those actually changes. If you link a watch, the
+watch link also holds a short summary per puzzle (solve count, best, Ao5, Ao12,
+last five times) for the watch to show, plus the solves the watch sends over.
 
 ## Tests
 
-The leaderboard security rules have emulator tests in `tests/` (Java needed): `cd tests && npm install && npm test`. They also run on every push through GitHub Actions.
+The leaderboard security rules have emulator tests in `tests/` (Java needed): `cd tests && npm install && npm test`. The watch link has plain Node tests with nothing to install: `npm run test:watch`. Both run on every push through GitHub Actions.
