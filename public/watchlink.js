@@ -1,5 +1,5 @@
 /* Copy of natesteele888/apps watchlink.js: the original lives there, and the two files must stay the same. */
-/* Watch link: how the family apps on a phone (Get Ready, Cube Clock, Read 20, Locker, Gameday Picks) talk to the
+/* Watch link: how the family apps on a phone (Get Ready, Cube Clock, Read 20, Power Program, Gameday Picks) talk to the
    Steele Family apps on a Wear OS watch (watch/family).
 
    One private link joins one phone to one watch. It is a single document in the nates-toolbox Firestore,
@@ -9,21 +9,22 @@
    The document has one text field per app. Each side writes only its own fields, so the two never write over each
    other:
      gr   Get Ready's lists and check marks, written by the phone (the watch reads it).
-     cc, r20, lk, gp   a short summary from Cube Clock, Read 20, Locker and Gameday Picks for the watch to show.
-     w    the watch's own log of what happened on the watch (a tick, a solve, a reading session, reps), written only by
+     cc, r20, pp, gp   a short summary from Cube Clock, Read 20, Power Program (today's workout) and Gameday Picks
+                       for the watch to show.
+     w    the watch's own log of what happened on the watch (a tick, a solve, a reading session, a finished exercise), written only by
           the watch. Each phone app takes the entries for it that it hasn't taken yet.
 
    Linking: the watch shows an 8-letter code. Typing it on the phone (any of the apps) puts this phone's key in
    fw_pair/<code> for the watch to pick up; the watch then deletes that note. All the apps on this site share one key
    (localStorage is per site), so linking once in one app links them all.
 
-   Every app loads this file itself; Cube Clock (its own repo) keeps a copy. Keep the two the same. */
+   Every app loads this file itself; Cube Clock (its own repo) keeps a copy: keep the two the same. Power Program (fitness-hub) loads this one from the site. */
 (function (root) {
   "use strict";
   const BASE = "https://firestore.googleapis.com/v1/projects/nates-toolbox/databases/(default)/documents/";
   const KEY = "steele.watchlink", SEEN = "steele.watchlink.seen.";
   const ABC = "abcdefghijklmnopqrstuvwxyz234567";
-  const FIELDS = ["gr", "cc", "r20", "lk", "gp", "w"];
+  const FIELDS = ["gr", "cc", "r20", "pp", "gp", "w"];
   const listeners = new Set();
 
   const lsGet = k => { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } };
@@ -87,7 +88,7 @@
     return true;
   };
 
-  /* The watch's log entries for one app ("gr", "cc", "r20", "lk") that this phone hasn't taken yet, oldest first.
+  /* The watch's log entries for one app ("gr", "cc", "r20", "pp") that this phone hasn't taken yet, oldest first.
      Call W.took(app, entries) once they're saved, so they are never taken twice. */
   const seen = app => { try { const a = JSON.parse(lsGet(SEEN + app) || "[]"); return Array.isArray(a) ? a : []; } catch (e) { return []; } };
   W.fresh = (doc, app) => {
