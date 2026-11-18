@@ -15,6 +15,10 @@
           GameChanger team for live scores. See watch/shared/.../family/core/SchedCore.kt for its shape.
      pk   the practice running in Practice Clock (each block's name and length and the clock numbers), so the watch can
           show the station and buzz at every change by itself. {"none":true} when no practice is running.
+     fg   Fairway: the golfer's round (course, holes, green marks, notes, bag and scores), written by fairway/watch.js. See
+          watch/shared/.../family/core/FairwayCore.kt for its shape.
+     ps   My Stats: one player's LYBS stats by season (year, level and counting stats only, no name or team), written by
+          apps/stats after it signs in to the LYBS Dashboard. See watch/shared/.../family/core/StatsCore.kt for its shape.
      w    the watch's own log of what happened on the watch (a tick, a solve, a reading session, a finished exercise), written only by
           the watch. Each phone app takes the entries for it that it hasn't taken yet.
 
@@ -28,7 +32,7 @@
   const BASE = "https://firestore.googleapis.com/v1/projects/nates-toolbox/databases/(default)/documents/";
   const KEY = "steele.watchlink", SEEN = "steele.watchlink.seen.";
   const ABC = "abcdefghijklmnopqrstuvwxyz234567";
-  const FIELDS = ["gr", "cc", "r20", "pp", "gp", "sc", "pk", "w"];
+  const FIELDS = ["gr", "cc", "r20", "pp", "gp", "sc", "pk", "fg", "ps", "w"];
   const listeners = new Set();
 
   const lsGet = k => { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } };
