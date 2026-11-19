@@ -63,15 +63,42 @@ async function connect() {
   return fb;
 }
 
+/* A phone that opened the app with no signal tries again once it is back
+   online, so the leaderboard comes back without closing the app. The browser
+   remembers a failed module download for the life of the page, so with no
+   signal we wait for "online" instead of trying (and failing) the import. */
+const NO_SIGNAL = "No connection \u2014 your times are still saved on this device.";
+let starting = false, retryArmed = false, authOff = null;
+function retryWhenOnline() {
+  if (retryArmed || typeof window === "undefined") return;
+  retryArmed = true;
+  window.addEventListener("online", function again() {
+    window.removeEventListener("online", again);
+    retryArmed = false;
+    if (lb.status !== "live") init();
+  });
+}
+
 export async function init() {
+  if (starting) return;
+  starting = true;
   lb.name = readLocal(LS_NAME, "");
   lb.group = cleanGroup(readLocal(LS_GROUP, "all"));
-  if (!configured) { emit(); return; }
+  if (!configured) { starting = false; emit(); return; }
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    lb.status = "error";
+    lb.message = NO_SIGNAL;
+    retryWhenOnline();
+    starting = false;
+    emit();
+    return;
+  }
 
   try {
     const { auth, A } = await connect();
+    if (authOff) { authOff(); authOff = null; }
     await new Promise((resolve) => {
-      A.onAuthStateChanged(auth, (user) => {
+      authOff = A.onAuthStateChanged(auth, (user) => {
         if (user) {
           lb.uid = user.uid;
           lb.status = "live";
@@ -92,7 +119,8 @@ export async function init() {
           lb.message = "Turn on Anonymous sign-in in the Firebase console " +
                        "(Authentication → Sign-in method → Anonymous).";
         } else if (code === "auth/network-request-failed") {
-          lb.message = "No connection — your times are still saved on this device.";
+          lb.message = NO_SIGNAL;
+          retryWhenOnline();
         } else {
           lb.message = "Could not reach the leaderboard.";
         }
@@ -101,10 +129,13 @@ export async function init() {
       });
     });
   } catch (err) {
+    /* almost always no signal: the Firebase library could not be downloaded */
     lb.status = "error";
-    lb.message = "Could not load Firebase.";
+    lb.message = NO_SIGNAL;
+    retryWhenOnline();
     emit();
   }
+  starting = false;
 }
 
 export async function setName(raw) {

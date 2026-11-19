@@ -8,13 +8,15 @@
  * Only same-origin GETs are touched. Firebase traffic, when the leaderboard is
  * switched on, goes straight to the network.
  */
-var CACHE = "cubeclock-v16";
+var CACHE = "cubeclock-v23";
 var ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
   "./leaderboard.js",
+  "./watchlink.js",
+  "./watch-sync.js",
   "./firebase-config.js",
   "./manifest.json",
   "./fonts/archivo-latin.woff2",

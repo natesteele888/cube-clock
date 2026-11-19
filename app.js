@@ -3,7 +3,8 @@
 //
 // Every solve is stored locally in this browser and never leaves the device.
 // Only a player's BEST figures per puzzle are published to the shared
-// leaderboard, and only when they actually change.
+// leaderboard, and only when they actually change. A linked watch (optional,
+// see "watch" below) also gets a short summary to show and sends its solves here.
 // ---------------------------------------------------------------------------
 
 import * as LB from "./leaderboard.js";
@@ -272,6 +273,7 @@ import * as LB from "./leaderboard.js";
   }
   function save(){
     try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(err){ /* quota or blocked */ if(window.nateHealth) window.nateHealth.note("save", "solve times not saved"); }
+    watchSoon();          // a linked watch hears about new times a few seconds later
   }
   function listOf(id){
     if(!store.solves[id]) store.solves[id]=[];
@@ -1726,6 +1728,79 @@ import * as LB from "./leaderboard.js";
       });
   });
 
+  /* ============ watch ============ */
+  /* Optional link to Cube Clock on a Wear OS watch (watchlink.js + watch-sync.js).
+     Solves timed on the watch join this history like any other; the watch is
+     sent a short summary (best, Ao5, Ao12, last five) to show. Nothing here
+     touches the network until the phone is linked. */
+  var WL = window.WatchLink, CW = window.CCWatch;
+  var watchSync = null, watchTimer = 0, watchTaking = false;
+  function watchSoon(){
+    if(!watchSync || watchTaking || !WL.linked()) return;
+    clearTimeout(watchTimer);
+    watchTimer = setTimeout(syncWatch, 3000);
+  }
+  function watchSay(msg, bad){
+    var el = $("w-say");
+    if(!el) return;
+    el.textContent = msg || "";
+    el.className = bad ? "say bad" : "say";
+  }
+  function syncWatch(){
+    clearTimeout(watchTimer);
+    if(!watchSync || !WL.linked()) return;
+    watchSync().then(function(r){
+      if(r.skipped) return;
+      watchSay(r.added ? "Added "+r.added+" solve"+(r.added===1?"":"s")+" from the watch." : "Up to date with the watch · "+clockTime(Date.now()));
+    }, function(){
+      watchSay("Couldn’t reach the watch link just now. It tries again by itself.", true);
+    });
+  }
+  function takeWatchSolves(entries){
+    // The open solve keeps its +2/DNF/delete buttons even if watch solves land before it.
+    var editing = T.editIdx >= 0 ? listOf(T.id)[T.editIdx] : null;
+    var r = CW.takeSolves(store.solves, entries, PUZZLES.map(function(p){ return p.id; }), Date.now());
+    if(!r.added) return 0;
+    if(editing) T.editIdx = listOf(T.id).indexOf(editing);
+    watchTaking = true; save(); watchTaking = false;
+    tally();
+    if(current === "home") renderHome();
+    else if(current === "stats") renderStats();
+    else if(current === "session") renderSession();
+    else if(current === "timer") renderSide();
+    r.puzzles.forEach(function(id){ maybePublish(id); });
+    return r.added;
+  }
+  if(WL && CW){
+    watchSync = CW.makeSync(WL, {
+      solves: function(){ return store.solves; },
+      ids: PUZZLES.map(function(p){ return p.id; }),
+      puz: function(){ return T.id; },
+      num: { eff:eff, avgOf:avgOf, bestSingle:bestSingle },
+      take: takeWatchSolves,
+      busy: function(){ return T.phase !== "idle"; }
+    });
+    WL.panel($("w-card"), {
+      intro: "Time solves on your Wear OS watch. Open Cube Clock on the watch, then type the code it shows.",
+      linkedText: "Solves you time on the watch land in your history here, and the watch shows your best and Ao5.",
+      btn: "ghost",
+      btnPri: "ghost"
+    });
+    WL.onChange(function(on){           // linked or unlinked here, or in another tab of these apps
+      watchSync.reset();
+      if(on) syncWatch(); else { clearTimeout(watchTimer); watchSay(""); }
+    });
+    document.addEventListener("visibilitychange", function(){
+      if(document.visibilityState === "visible") syncWatch();
+    });
+    setInterval(function(){
+      if(document.visibilityState === "visible") syncWatch();
+    }, 30000);
+  } else {
+    setShown($("w-sec"), false);
+    setShown($("w-wrap"), false);
+  }
+
   /* ============ boot ============ */
   var SEEN_KEY = "cubeclock.seen", SEEN_TIMER_KEY = "cubeclock.seen.timer";
   $("tut2-go").addEventListener("click", function(){
@@ -1797,6 +1872,7 @@ import * as LB from "./leaderboard.js";
       if(!wasLive && s.status === "live" && s.name) publishAll();
     });
     LB.init();
+    syncWatch();
   }
   start();
 })();
