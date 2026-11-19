@@ -8,7 +8,7 @@
  * Only same-origin GETs are touched. Firebase traffic, when the leaderboard is
  * switched on, goes straight to the network.
  */
-var CACHE = "cubeclock-v23";
+var CACHE = "cubeclock-v24";
 var ASSETS = [
   "./",
   "./index.html",
