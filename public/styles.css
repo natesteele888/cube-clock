@@ -107,6 +107,10 @@ img{max-width:100%}
   /* ---------- timer ---------- */
   #view-timer{position:fixed;inset:0;z-index:50;background:var(--bg);padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);display:flex;flex-direction:column}
   #view-timer.armed{background:var(--go-soft)}
+  /* While a solve runs the timer view sits above everything, the shared "Add to
+     home screen" bar (install.js, z-index 2147483000) included, so a palm landing
+     on that bar still hits .stop-catch and stops the solve. */
+  #view-timer.running{z-index:2147483647}
   .t-top{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line-soft);flex:none;transition:opacity .2s;overflow-x:auto;flex-wrap:nowrap}
   .t-top::-webkit-scrollbar{display:none}
   .lbl-sm{display:none}
